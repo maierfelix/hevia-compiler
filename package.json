@@ -1,0 +1,48 @@
+{
+  "name": "hevia-compiler",
+  "version": "0.0.1",
+  "description": "Swift Experiment",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/maierfelix/hevia-compiler.git"
+  },
+  "keywords": [
+    "Hevia",
+    "Swift",
+    "Transpile",
+    "Transpiler",
+    "Compiler",
+    "AST",
+    "Parser",
+    "Tokenizer"
+  ],
+  "homepage": "https://github.com/maierfelix/hevia-compiler#readme",
+  "author": "Felix Maier <maier.felix96@gmail.com>",
+  "contributors": [
+    "Felix Maier <xilefmai@gmail.com> (https://github.com/maierfelix)"
+  ],
+  "bugs": {
+    "url": "https://github.com/maierfelix/hevia-compiler/issues"
+  },
+  "scripts": {
+    "start": "babel-node --presets=es2015 src/index.js",
+    "dist": "npm run dist-test && npm run dist-release",
+    "dist-release": "browserify ./src/index.js -t babelify -o dist/hevia-compiler.js",
+    "dist-test": "npm run dist-release && npm run test",
+    "test": "node tests/index.js"
+  },
+  "engines": {
+    "node": ">= 4.x"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.14.0",
+    "babel-preset-es2015": "^6.14.0",
+    "babel-preset-stage-0": "^6.5.0",
+    "babelify": "^7.3.0",
+    "browserify": "^13.1.0"
+  },
+  "dependencies": {
+    "hevia": "^0.1.0"
+  }
+}

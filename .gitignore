@@ -1,0 +1,4 @@
+npm-debug.*
+node_modules/
+dist/wat.js
+dist/wat.min.js
