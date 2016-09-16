@@ -18,7 +18,7 @@
     "Tokenizer"
   ],
   "homepage": "https://github.com/maierfelix/hevia-compiler#readme",
-  "author": "Felix Maier <maier.felix96@gmail.com>",
+  "author": "Felix Maier <xilefmai@gmail.com>",
   "contributors": [
     "Felix Maier <xilefmai@gmail.com> (https://github.com/maierfelix)"
   ],
@@ -43,6 +43,7 @@
     "browserify": "^13.1.0"
   },
   "dependencies": {
+    "commander": "^2.9.0",
     "hevia": "^0.1.0"
   }
 }

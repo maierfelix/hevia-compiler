@@ -1,14 +1,15 @@
 import fs from "fs";
+import vm from "vm";
 import hevia from "hevia";
+import Scope from "./scope";
 
 import { VERSION } from "./cfg";
 import { greet, inherit } from "./utils";
-import { TT, Type, Token } from "./token";
+import { TT, Type, Token, Operator } from "./token";
 
 import * as _walk from "./walk";
-import * as _variable from "./emit/variable";
-import * as _function from "./emit/function";
-import * as _arguments from "./emit/arguments";
+
+import cmd from "./cli";
 
 /**
  * @class Compiler
@@ -21,30 +22,70 @@ class Compiler {
     this.padding = 0;
     this.spacing = 2;
 
-    this.blocks = [];
     this.content = "";
 
+    this.scope = null;
+
+    /**
+     * Used to determine
+     * double compilation
+     * @type {Boolean}
+     */
+    this.compiled = false;
+
+  }
+
+  /**
+   * @param {Node} node
+   */
+  pushScope(node) {
+    if (!this.compiled) {
+      node.context = new Scope(node, this.scope);
+    }
+    this.scope = node.context;
+  }
+
+  popScope() {
+    this.scope = this.scope.parent;
   }
 
   /**
    * @param {String} msg
    */
   write(str) {
-    this.content += str;
+    if (this.compiled) this.content += str;
   }
 
   indent() {
-    this.padding += this.spacing;
+    if (this.compiled) this.padding++;
   }
 
   outdent() {
-    this.padding -= this.spacing;
+    if (this.compiled) this.padding--;
+  }
+
+  writeIndent() {
+    let ii = this.padding;
+    while (ii > 0) {
+      ii -= this.spacing;
+      let spaces = this.spacing;
+      while (spaces-- > 0) this.write(" ");
+    };
+  }
+
+  /**
+   * @param {Number} op
+   * @return {Object}
+   */
+  getOperatorByKind(op) {
+    let token = TT[op];
+    return (Operator[token]);
   }
 
   /**
    * @param {String} msg
    */
-  expect(msg) {
+  throw(msg) {
     let str = `\x1b[31;1m${msg}\x1b[0m`;
     throw new Error(str);
   }
@@ -69,6 +110,26 @@ class Compiler {
 
   /**
    * @param {Node} node
+   * @return {Boolean}
+   */
+  isIdentifier(node) {
+    return (
+      node.type === Token.Identifier
+    );
+  }
+
+  /**
+   * @param {String} name
+   * @return {Node}
+   */
+  resolveIdentifier(name) {
+    let resolve = this.scope.resolve(name);
+    if (resolve === null) this.throw(`${name} is not defined!`);
+    return (resolve || null);
+  }
+
+  /**
+   * @param {Node} node
    * @param {Number} kind
    */
   expectNodeKind(node, kind) {
@@ -76,7 +137,7 @@ class Compiler {
       let nodeKind = this.getNodeTypeAsString(node);
       let expKind = Type[kind];
       let msg = `Invalid node kind! Expected ${expKind} but got ${nodeKind}`;
-      this.expect(msg);
+      this.throw(msg);
     }
   }
 
@@ -87,16 +148,22 @@ class Compiler {
   expectNodeProperty(node, property) {
     if (!node.hasOwnProperty(property)) {
       let msg = `${this.getNodeTypeAsString(node)} doesn't have property ${property}`;
-      this.expect(msg);
+      this.throw(msg);
     }
   }
 
   /**
    * @param {String} msg
    */
-  transform(str) {
+  walk(str) {
     let ast = this.parse(str);
-    this.walk(ast);
+    this.walkSimple(ast);
+    this.compiled = true;
+    this.walkSimple(ast);
+    console.log("----------------");
+    let result = vm.runInNewContext(this.content, {});
+    console.log(this.content);
+    console.log("=>", result);
   }
 
   /**
@@ -112,12 +179,9 @@ class Compiler {
 }
 
 inherit(Compiler, _walk);
-inherit(Compiler, _variable);
-inherit(Compiler, _function);
-inherit(Compiler, _arguments);
 
-(() => {
-  const file = fs.readFileSync(process.argv[2], "utf8");
-  const compiler = new Compiler();
-  compiler.transform(file);
-})();
+const compiler = new Compiler();
+
+compiler.walk(cmd.input);
+
+export default compiler;
