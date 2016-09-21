@@ -2,11 +2,11 @@
 
 * text=auto
 *.js text
+*.hevia text
 
 # Make GitHub ignore vendor libraries while computing language stats.
 # See https://github.com/github/linguist#overrides.
 
-*.proto linguist-vendored=true
 *.sh linguist-vendored=true
 *.bat linguist-vendored=true
 
@@ -14,3 +14,4 @@
 # ide/web/lib/templates to make GitHub correctly count their language stats.
 # 
 *.js_ linguist-language=JavaScript
+*.hevia_ linguist-language=Swift
