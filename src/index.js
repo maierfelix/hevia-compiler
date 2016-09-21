@@ -1,13 +1,21 @@
 import fs from "fs";
 import vm from "vm";
-import hevia from "hevia";
-import Scope from "./scope";
+import hevia from "./parser";
+import Scope from "./compile/scope";
 
 import { VERSION } from "./cfg";
 import { greet, inherit } from "./utils";
 import { TT, Type, Token, Operator } from "./token";
 
-import * as _walk from "./walk";
+import * as _generate from "./generate";
+
+import * as _compile from "./compile";
+import * as _compile_walk from "./compile/walk";
+import * as _compile_visit from "./compile/visit";
+import * as _compile_resolve from "./compile/resolve";
+
+import * as _semantic from "./semantic";
+import * as _semantic_visit from "./semantic/visit";
 
 import cmd from "./cli";
 
@@ -32,6 +40,8 @@ class Compiler {
      * @type {Boolean}
      */
     this.compiled = false;
+
+    this.visitors = {};
 
   }
 
@@ -119,13 +129,40 @@ class Compiler {
   }
 
   /**
-   * @param {String} name
-   * @return {Node}
+   * @param {Node} node
+   * @return {Boolean}
    */
-  resolveIdentifier(name) {
-    let resolve = this.scope.resolve(name);
-    if (resolve === null) this.throw(`${name} is not defined!`);
-    return (resolve || null);
+  isGlobal(node) {
+    return (
+      node.parent === null
+    );
+  }
+
+  /**
+   * @param {String} name
+   * @return {Boolean}
+   */
+  isNativeType(name) {
+    switch (name) {
+      case "Void":
+      case "Null":
+      case "Int":
+      case "Int8":
+      case "Uint8":
+      case "Int32":
+      case "Int64":
+      case "Uint64":
+      case "Double":
+      case "Float":
+      case "Boolean":
+      case "String":
+      case "Character":
+        return (true);
+      break;
+      default:
+        return (false);
+      break;
+    };
   }
 
   /**
@@ -136,7 +173,7 @@ class Compiler {
     if (!this.isNodeKindOf(node, kind)) {
       let nodeKind = this.getNodeTypeAsString(node);
       let expKind = Type[kind];
-      let msg = `Invalid node kind! Expected ${expKind} but got ${nodeKind}`;
+      let msg = `Invalid node kind! Expected '${expKind}' but got '${nodeKind}'`;
       this.throw(msg);
     }
   }
@@ -147,23 +184,25 @@ class Compiler {
    */
   expectNodeProperty(node, property) {
     if (!node.hasOwnProperty(property)) {
-      let msg = `${this.getNodeTypeAsString(node)} doesn't have property ${property}`;
+      let msg = `'${this.getNodeTypeAsString(node)}' doesn't have property '${property}'`;
       this.throw(msg);
     }
   }
 
   /**
    * @param {String} msg
+   * @param {String} target
    */
-  walk(str) {
+  compile(str, target) {
+    if (!target in _generate) {
+      this.throw(`Target '${target}' is unsupported`);
+    }
     let ast = this.parse(str);
-    this.walkSimple(ast);
+    this.walk(ast);
     this.compiled = true;
-    this.walkSimple(ast);
     console.log("----------------");
-    let result = vm.runInNewContext(this.content, {});
     console.log(this.content);
-    console.log("=>", result);
+    //console.log("=>", vm.runInNewContext(this.content, {}));
   }
 
   /**
@@ -176,12 +215,49 @@ class Compiler {
     return (ast);
   }
 
+  /**
+   * @param {Node} node
+   */
+  visit(node) {
+    let visitor = null;
+    for (let key in this.visitors) {
+      visitor = this.visitors[key];
+      if (visitor[node.kind] !== void 0) {
+        visitor[node.kind].apply(this, [node]);
+      }
+    };
+  }
+
+  /**
+   * @param {Object} visitors
+   * @param {String} kind
+   */
+  registerVisitors(visitors, kind) {
+    if (!this.visitors[kind]) this.visitors[kind] = {};
+    for (let key in visitors) {
+      this.visitors[kind][Type[key]] = visitors[key];
+    };
+  }
+
 }
 
-inherit(Compiler, _walk);
+greet();
+
+inherit(Compiler, _compile);
+inherit(Compiler, _semantic);
+inherit(Compiler, _compile_walk);
+inherit(Compiler, _compile_resolve);
 
 const compiler = new Compiler();
 
-compiler.walk(cmd.input);
+compiler.registerVisitors(_compile_visit, "compile");
+compiler.registerVisitors(_semantic_visit, "semantic");
+
+try {
+  compiler.compile(cmd.input, "js");
+} catch (e) {
+  //console.log(e.message);
+  console.log(e);
+}
 
 export default compiler;

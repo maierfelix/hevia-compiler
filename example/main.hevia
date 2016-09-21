@@ -1,0 +1,54 @@
+func swap(c: inout Int, d: inout Int) {
+  const tmp:Int = c
+  c = d
+  d = tmp
+}
+
+let a:Int = null
+// FIXXXME
+a = 1337;
+a = "lol"
+let b:Int = 1338
+
+swap(a, b)
+
+const e:Int = 42
+
+class Vector {
+  let x:Int = 0;
+  let y:Int = 0;
+  constructor(x: Int, y:Int) {
+
+  }
+}
+
+infix operator $ {
+  associativity left
+  precedence 140
+  constructor(left:Int, right:Int)->Int {
+    return (left);
+  }
+}
+
+infix operator equals {
+  associativity left
+  precedence 60
+  constructor(left:Vector, right:Vector)->Boolean {
+    return (1337);
+  }
+}
+
+infix operator meow {
+  associativity left
+  precedence 60
+  constructor(left:Boolean, right:Boolean)->Boolean {
+    return (1337);
+  }
+}
+
+let vecA:Vector = Vector(a, 2);
+let vecB:Vector = Vector(b, 5);
+let vecC:Boolean = nil;
+let vecD:Boolean = (Vector(a, 2) equals vecB) meow false;
+
+//let rofl:Int = (2 $ (vecA equals vecB)) $ 1337 $ b;

@@ -1,0 +1,89 @@
+// type extensions (native types only?)
+extension Double {
+  func square()->Int {
+    return (self * self);
+  }
+}
+
+// custom operators
+infix operator °°°° {
+  associativity left
+  precedence 160
+}
+func °°°° (left:Int, right:Int)->Int {
+  return pow(left, right);
+}
+
+let c:Double = 2.5.double() °°°° 2 == 2;
+
+// test
+class Vector {
+  var x = 0.0
+  var y = 0.0
+}
+
+infix operator equals {
+  associativity left
+  precedence 160
+}
+func equals(left:Vector, right:Vector)->Boolean {
+  return (
+    left.x === right.x &&
+    left.y === right.y
+  );
+}
+
+let vecA:Vector = Vector();
+let vecB:Vector = Vector();
+let vecC:Vector = a equals b;
+// custom operator assignment is determined by:
+// left or right inout && left or right !direct! assignment && no function return type
+
+
+
+
+
+
+
+
+
+
+
+
+func swap(c: inout Int, d: inout Int) {
+  const tmp:Int = c
+  c = d
+  d = tmp
+}
+
+let a:Int = 1337
+let b:Int = 1338
+
+swap(a, b)
+
+const e:Int = 42
+
+class Vector {
+  let x:Int = 0
+  let y:Int = 0
+  constructor(x: Int, y:Int) {
+    this.x = x
+    this.y = y
+  }
+}
+
+infix operator equals {
+  associativity left
+  precedence 160
+  constructor(left:Vector, right:Vector)->Boolean {
+    return (
+      left.x === right.x &&
+      left.y === right.y
+    );
+  }
+}
+
+let vecA:Vector = Vector(a, 2)
+let vecB:Vector = Vector(b, 5 * 7)
+let vecC:Boolean = vecA equals vecB
+let vecD:Boolean = vecA equals vecB

@@ -36,9 +36,9 @@ export default class Scope {
    * @return {Node}
    */
   resolve(name) {
-    if (this.table[name] !== null) {
-      return (this.table[name] || null);
-    } else {
+    let local = this.table[name];
+    if (local !== void 0) return (local);
+    else {
       if (this.parent !== null) {
         return (this.parent.resolve(name));
       }
