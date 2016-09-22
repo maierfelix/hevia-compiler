@@ -1,4 +1,4 @@
-import hevia from "./parser";
+import hevia from "./syntax";
 
 export const TT = hevia.labels.TokenList;
 export const Type = hevia.labels.Types;

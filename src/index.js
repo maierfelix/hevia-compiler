@@ -1,21 +1,23 @@
 import fs from "fs";
 import vm from "vm";
-import hevia from "./parser";
-import Scope from "./compile/scope";
+import hevia from "./syntax";
+import Scope from "./semantic/scope";
 
 import { VERSION } from "./cfg";
 import { greet, inherit } from "./utils";
 import { TT, Type, Token, Operator } from "./token";
 
-import * as _generate from "./generate";
-
-import * as _compile from "./compile";
-import * as _compile_walk from "./compile/walk";
-import * as _compile_visit from "./compile/visit";
-import * as _compile_resolve from "./compile/resolve";
+import * as _walk from "./walk";
 
 import * as _semantic from "./semantic";
 import * as _semantic_visit from "./semantic/visit";
+import * as _semantic_resolve from "./semantic/resolve";
+
+import * as _optimization from "./optimization";
+import * as _optimization_visit from "./optimization/visit";
+
+import * as _synthesis from "./synthesis";
+import * as _synthesis_visit from "./synthesis/visit";
 
 import cmd from "./cli";
 
@@ -34,6 +36,8 @@ class Compiler {
 
     this.scope = null;
 
+    this.ast = null;
+
     /**
      * Used to determine
      * double compilation
@@ -42,6 +46,13 @@ class Compiler {
     this.compiled = false;
 
     this.visitors = {};
+
+    this.currentState = null;
+    this.states = {
+      SEMANTIC: false,
+      OPTIMIZATION: false,
+      SYNTHESIS: false
+    };
 
   }
 
@@ -104,8 +115,16 @@ class Compiler {
    * @param {Node} node
    * @return {String}
    */
-  getNodeTypeAsString(node) {
+  getNodeKindAsString(node) {
     return (Type[node.kind]);
+  }
+
+  /**
+   * @param {Node} node
+   * @return {String}
+   */
+  getNodeTypeAsString(node) {
+    return (Token[node.type]);
   }
 
   /**
@@ -167,11 +186,65 @@ class Compiler {
 
   /**
    * @param {Node} node
+   * @return {Boolean}
+   */
+  isNativeOperator(node) {
+    let op = node.operator;
+    switch (op) {
+      case TT.MUL:
+      case TT.DIV:
+      case TT.MOD:
+      case TT.ADD:
+      case TT.SUB:
+      case TT.LT:
+      case TT.LE:
+      case TT.GT:
+      case TT.GE:
+      case TT.EQ:
+      case TT.NEQ:
+      case TT.AND:
+      case TT.OR:
+      case TT.NOT:
+      case TT.UNARY_ADD:
+      case TT.UNARY_SUB:
+        return (true);
+      break;
+      default:
+        return (
+          this.isAssignmentOperator(node)
+        );
+      break;
+    };
+  }
+
+  /**
+   * @param {Node} node
+   * @return {Boolean}
+   */
+  isAssignmentOperator(node) {
+    let op = node.operator;
+    switch (op) {
+      case TT.ASSIGN:
+      case TT.CMP_MUL:
+      case TT.CMP_DIV:
+      case TT.CMP_MOD:
+      case TT.CMP_ADD:
+      case TT.CMP_SUB:
+        return (true);
+      break;
+      default:
+        return (false);
+      break;
+    };
+  }
+
+  /**
+   * @param {Node} node
    * @param {Number} kind
    */
   expectNodeKind(node, kind) {
     if (!this.isNodeKindOf(node, kind)) {
-      let nodeKind = this.getNodeTypeAsString(node);
+      let nodeKind = this.getNodeKindAsString(node);
       let expKind = Type[kind];
       let msg = `Invalid node kind! Expected '${expKind}' but got '${nodeKind}'`;
       this.throw(msg);
@@ -184,7 +257,7 @@ class Compiler {
    */
   expectNodeProperty(node, property) {
     if (!node.hasOwnProperty(property)) {
-      let msg = `'${this.getNodeTypeAsString(node)}' doesn't have property '${property}'`;
+      let msg = `'${this.getNodeKindAsString(node)}' doesn't have property '${property}'`;
       this.throw(msg);
     }
   }
@@ -194,15 +267,30 @@ class Compiler {
    * @param {String} target
    */
   compile(str, target) {
-    if (!target in _generate) {
+    if (!target in _synthesis) {
       this.throw(`Target '${target}' is unsupported`);
     }
-    let ast = this.parse(str);
-    this.walk(ast);
-    this.compiled = true;
+    this.ast = this.parse(str);
+    this.enterPhase("semantic");
+    this.enterPhase("optimization");
+    this.enterPhase("synthesis");
     console.log("----------------");
     console.log(this.content);
     //console.log("=>", vm.runInNewContext(this.content, {}));
+  }
+
+  resetStates() {
+    let states = this.states;
+    states.SEMANTIC = false;
+    states.OPTIMIZATION = false;
+    states.SYNTHESIS = false;
+  }
+
+  enterPhase(state) {
+    this.currentState = state.toLowerCase();
+    this.resetStates();
+    this.states[state.toUpperCase()] = true;
+    this.walk(this.ast);
   }
 
   /**
@@ -219,13 +307,10 @@ class Compiler {
    * @param {Node} node
    */
   visit(node) {
-    let visitor = null;
-    for (let key in this.visitors) {
-      visitor = this.visitors[key];
-      if (visitor[node.kind] !== void 0) {
-        visitor[node.kind].apply(this, [node]);
-      }
-    };
+    let visitor = this.visitors[this.currentState];
+    if (visitor[node.kind] !== void 0) {
+      visitor[node.kind].apply(this, [node]);
+    }
   }
 
   /**
@@ -243,15 +328,16 @@ class Compiler {
 
 greet();
 
-inherit(Compiler, _compile);
+inherit(Compiler, _walk);
 inherit(Compiler, _semantic);
-inherit(Compiler, _compile_walk);
-inherit(Compiler, _compile_resolve);
+inherit(Compiler, _semantic_resolve);
+inherit(Compiler, _optimization);
 
 const compiler = new Compiler();
 
-compiler.registerVisitors(_compile_visit, "compile");
 compiler.registerVisitors(_semantic_visit, "semantic");
+compiler.registerVisitors(_optimization_visit, "optimization");
+compiler.registerVisitors(_synthesis_visit, "synthesis");
 
 try {
   compiler.compile(cmd.input, "js");

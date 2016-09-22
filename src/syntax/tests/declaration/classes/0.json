@@ -1,0 +1,1 @@
+{"kind":1,"body":{"kind":7,"body":[{"kind":18,"name":"Simple","extend":[],"body":{"kind":7,"body":[{"kind":22,"arguments":[],"body":{"kind":7,"body":[{"kind":6,"callee":{"kind":26,"value":"print","raw":"print","type":31},"arguments":[{"kind":26,"value":"1337","raw":"1337","type":35}]}]}}]}}]}}
