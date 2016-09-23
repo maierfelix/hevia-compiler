@@ -122,6 +122,7 @@ export function FunctionDeclaration(node) {
   this.expectNodeKind(node, Type.FunctionDeclaration);
   this.scope.register(node.name, node);
   this.pushScope(node);
+  this.returnContext = node;
   this.walkArguments(node);
   this.walkNode(node.body, node);
   this.popScope();
@@ -221,7 +222,34 @@ export function ClassDeclaration(node) {
 export function ConstructorDeclaration(node) {
   this.expectNodeKind(node, Type.ConstructorDeclaration);
   this.pushScope(node);
+  this.returnContext = node;
   this.walkArguments(node);
   this.walkNode(node.body, node);
   this.popScope();
+}
+
+/**
+ * @param {Node} node
+ */
+export function IfStatement(node) {
+  this.expectNodeKind(node, Type.IfStatement);
+  this.pushScope(node);
+  if (node.test !== null) {
+    this.walkNode(node.test, node);
+  }
+  if (node.consequent !== null) {
+    this.walkNode(node.consequent, node);
+  }
+  if (node.alternate !== null) {
+    this.walkNode(node.alternate, node);
+  }
+  this.popScope();
+}
+
+/**
+ * @param {Node} node
+ */
+export function MemberExpression(node) {
+  this.expectNodeKind(node, Type.MemberExpression);
+  this.walkNode(node.object, node);
 }

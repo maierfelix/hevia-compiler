@@ -1,7 +1,8 @@
 import {
   Token,
   Types as Type,
-  TokenList as TT
+  TokenList as TT,
+  Operators as Operator
 } from "../../labels";
 
 import { uHash } from "../../utils";

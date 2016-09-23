@@ -35,6 +35,7 @@ class Compiler {
     this.content = "";
 
     this.scope = null;
+    this.returnContext = null;
 
     this.ast = null;
 
@@ -270,6 +271,7 @@ class Compiler {
     if (!target in _synthesis) {
       this.throw(`Target '${target}' is unsupported`);
     }
+    this.ast = this.parse(str);
     this.ast = this.parse(str);
     this.enterPhase("semantic");
     this.enterPhase("optimization");

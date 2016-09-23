@@ -74,7 +74,8 @@ export function parseLiteral() {
       node.value = node.raw = String(node.type);
       if (TT[node.value] === "NULL") {
         node.type = Token.NullLiteral;
-      } else {
+      }
+      else {
         node.type = Token.BooleanLiteral;
       }
     }

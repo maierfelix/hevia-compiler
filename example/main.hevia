@@ -4,51 +4,76 @@ func swap(c: inout Int, d: inout Int) {
   d = tmp
 }
 
-let a:Int = null
-// FIXXXME
-a = 1337;
-a = "lol"
+let a:Int = nil
 let b:Int = 1338
 
-swap(a, b)
+a = 44;
+b = 1339;
+
+swap(a, b);
 
 const e:Int = 42
 
-class Vector {
-  let x:Int = 0;
-  let y:Int = 0;
-  constructor(x: Int, y:Int) {
+class Miao {
+  constructor() {
 
+  }
+}
+
+class Vector {
+  let x:Miao = Miao();
+  let y:Miao = Miao();
+  constructor(x: Int, y:Int) {
+    this.x = x;
+    this.y = y;
   }
 }
 
 infix operator $ {
   associativity left
-  precedence 140
-  constructor(left:Int, right:Int)->Int {
-    return (left);
+  precedence 160
+  constructor(left:Int, right:Boolean)->Boolean {
+    return (left == 1);
   }
 }
 
 infix operator equals {
   associativity left
-  precedence 60
+  precedence 150
   constructor(left:Vector, right:Vector)->Boolean {
-    return (1337);
+    return (
+      left.x == right.x &&
+      left.y == right.y
+    );
   }
 }
 
 infix operator meow {
   associativity left
-  precedence 60
-  constructor(left:Boolean, right:Boolean)->Boolean {
-    return (1337);
+  precedence 150
+  constructor(left:Boolean, right:Boolean)->Int {
+    if (Vector(1, 1) equals Vector(1, 1)) {
+      return (5 + 7 * 44);
+    }
   }
 }
 
-let vecA:Vector = Vector(a, 2);
+let vecA:Vector = Vector(a, 2 * 745);
 let vecB:Vector = Vector(b, 5);
-let vecC:Boolean = nil;
-let vecD:Boolean = (Vector(a, 2) equals vecB) meow false;
+b = (Vector(a, 2) equals vecB) meow false; // this doesnt work right now
 
-//let rofl:Int = (2 $ (vecA equals vecB)) $ 1337 $ b;
+let rofl:Int = 1337 $ (2 $ (vecA equals vecB)) meow false;
+
+func test()->Double {
+  return (1337.6);
+}
+
+test();
+
+let result:Boolean = nil
+if (false == true) {
+  result = true;
+} else {
+  result = false;
+}
+

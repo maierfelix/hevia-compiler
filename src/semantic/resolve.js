@@ -49,7 +49,7 @@ export function resolveType(node) {
     case Type.BinaryExpression:
       this.resolveType(node.left);
       this.resolveType(node.right);
-      node.resolvedType = this.validateExpressionTypes(node);
+      node.resolvedType = this.resolveExpression(node);
     break;
     case Type.CallExpression:
       let callee = node.callee.value;
@@ -66,20 +66,23 @@ export function resolveType(node) {
       this.resolveIdentifier(node.resolvedType.value);
     break;
     case Type.Literal:
-      node.resolvedType = this.resolveLiteralType(node);
+      node.resolvedType = this.resolveLiteral(node);
       this.resolveIdentifier(node.resolvedType.value);
+    break;
+    case Type.MemberExpression:
+      node.resolvedType = this.resolveExpression(node);
     break;
     default:
       this.throw(`Unsupported '${this.getNodeKindAsString(node)}' node type`);
     break;
   };
 }
- 
+
 /**
  * @param {Node} node
  * @return {String}
  */
-export function resolveLiteralType(node) {
+export function resolveLiteral(node) {
   let resolve = this.scope.resolve(node.value);
   if (resolve !== null) {
     if (resolve.kind === Type.TypeExpression) {
@@ -117,10 +120,10 @@ export function createFakeLiteral(value) {
  * @param {Node} node
  * @return {Node}
  */
-export function validateExpressionTypes(node) {
+export function resolveExpression(node) {
   switch (node.kind) {
     case Type.BinaryExpression:
-      return (this.validateBinaryExpressionType(node));
+      return (this.resolveBinaryExpression(node));
     break;
     case Type.Literal:
       // make sure identifiers are defined
@@ -132,6 +135,9 @@ export function validateExpressionTypes(node) {
     case Type.CallExpression:
       return (node.resolvedType);
     break;
+    case Type.MemberExpression:
+      return (this.resolveMemberExpression(node));
+    break;
     default:
       this.throw(`Unsupported expression: '${this.getNodeKindAsString(node)}'`);
     break;
@@ -139,14 +145,49 @@ export function validateExpressionTypes(node) {
 }
 
 /**
+ * TODO: support deep members
  * @param {Node} node
  * @return {Node}
  */
-export function validateBinaryExpressionType(node) {
+export function resolveMemberExpression(node) {
+  let object = node.object;
+  let isThis = object.value << 0 === TT.THIS;
+  let property = node.property.value;
+  let objectType = this.resolveLiteral(object).value;
+  let returnType = null;
+  // validate members
+  let properties = null;
+  // default member property
+  if (!isThis) {
+    properties = this.scope.resolve(objectType).body;
+    for (let prop of properties.body) {
+      if (prop.isClassProperty && prop.kind === Type.VariableDeclaration) {
+        if (property === prop.name.value) {
+          returnType = prop.init.resolvedType;
+          break;
+        }
+      }
+    };
+  }
+  // this property
+  else {
+    returnType = this.scope.resolve(property).type || null;
+  }
+  if (returnType === null) {
+    this.throw(`'${objectType}' does not have member '${property}'`);
+  }
+  return (returnType);
+}
+
+/**
+ * @param {Node} node
+ * @return {Node}
+ */
+export function resolveBinaryExpression(node) {
   let returnType = null;
   let op = this.resolveOperator(node);
-  let leftType = this.validateExpressionTypes(node.left).value;
-  let rightType = this.validateExpressionTypes(node.right).value;
+  let leftType = this.resolveExpression(node.left).value;
+  let rightType = this.resolveExpression(node.right).value;
   // custom operator
   if (!this.isNativeOperator(node)) {
     returnType = op.ctor.type;
@@ -225,11 +266,14 @@ export function resolveParameter(node, arg, index) {
   else if (resolve.kind === Type.ClassDeclaration) {
     args = resolve.ctor.arguments;
   }
+  if (args[index] === void 0) {
+    this.throw(`Too much arguments passed for '${callee}'`);
+  }
   let isReference = args[index].isReference;
   if (isReference) {
     // only allow identifiers as inout argument
     if (arg.type !== Token.Identifier) {
-      this.throw(`Argument '${args[index].name.value}' of ${callee}' is not mutable`);
+      this.throw(`Argument '${args[index].name.value}' of '${callee}' is not mutable`);
     }
     let resolvedVariable = this.resolveVariableDeclaration(arg.value);
     let isContant = this.scope.resolve(arg.value).init.parent.isConstant;

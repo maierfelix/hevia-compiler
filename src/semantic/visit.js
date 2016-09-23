@@ -62,7 +62,7 @@ export function VariableDeclaration(node) {
  */
 export function BinaryExpression(node) {
   this.resolveType(node);
-  let type = this.validateExpressionTypes(node).value;
+  let type = this.resolveBinaryExpression(node).value;
   this.resolveReturnType(node, type);
 }
 
@@ -74,4 +74,35 @@ export function Literal(node) {
   this.resolveType(node);
   let type = node.resolvedType.value;
   this.resolveReturnType(node, type);
+}
+
+/**
+ * @param {Node} node
+ */
+export function IfStatement(node) {
+  let isElse = !!(node.parent && node.parent.kind === Type.IfStatement && !node.test);
+  if (node.test !== null) {
+    this.resolveType(node.test);
+    let type = node.test.resolvedType.value;
+    if (type !== "Boolean") {
+      this.throw(`IfStatement condition expected 'Boolean' but got '${type}'`);
+    }
+  }
+}
+
+/**
+ * @param {Node} node
+ */
+export function ReturnStatement(node) {
+  let expr = node.argument;
+  this.resolveType(expr);
+  let returnType = expr.resolvedType.value;
+  let returnContext = this.returnContext.type.value;
+  let target = this.getDeclarationName(this.returnContext);
+  if (returnContext === "Void") {
+    this.throw(`Unexpected return value in '${target}'`);
+  }
+  if (returnContext !== returnType) {
+    this.throw(`'${target}' returns '${returnContext}' but got '${returnType}'`);
+  }
 }

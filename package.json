@@ -1,21 +1,23 @@
 {
   "name": "hevia-compiler",
-  "version": "0.0.1",
-  "description": "Swift Experiment",
+  "version": "0.0.3",
+  "description": ":Swift-like strongly typed language",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/maierfelix/hevia-compiler.git"
   },
   "keywords": [
-    "Hevia",
-    "Swift",
-    "Transpile",
-    "Transpiler",
-    "Compiler",
+    "hevia",
+    "swift",
+    "transpiler",
+    "compiler",
     "AST",
-    "Parser",
-    "Tokenizer"
+    "parser",
+    "tokenizer",
+    "strongly",
+    "typed",
+    "source-to-source"
   ],
   "homepage": "https://github.com/maierfelix/hevia-compiler#readme",
   "author": "Felix Maier <xilefmai@gmail.com>",
@@ -43,7 +45,6 @@
     "browserify": "^13.1.0"
   },
   "dependencies": {
-    "commander": "^2.9.0",
-    "hevia": "^0.1.0"
+    "commander": "^2.9.0"
   }
 }

@@ -84,3 +84,27 @@ export function validateArguments(callee, argsA, argsB) {
     ++index;
   };
 }
+
+/**
+ * @param {Node} node
+ * @return {String}
+ */
+export function getDeclarationName(node) {
+  switch (node.kind) {
+    case Type.FunctionDeclaration:
+      return (node.name);
+    break;
+    case Type.ConstructorDeclaration:
+      let parent = node.parent;
+      if (parent.kind === Type.OperatorDeclaration) {
+        return (parent.operator);
+      }
+      else if (parent.kind === Type.ClassDeclaration) {
+        return (parent.name);
+      }
+      else {
+        this.throw(`Unexpected declaration node '${this.getNodeKindAsString(parent)}'`);
+      }
+    break;
+  };
+}
