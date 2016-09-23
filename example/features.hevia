@@ -1,3 +1,5 @@
+// vim: syntax=swift
+
 // type extensions (native types only?)
 extension Double {
   func square()->Int {

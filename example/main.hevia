@@ -1,3 +1,4 @@
+// vim: syntax=swift
 func swap(c: inout Int, d: inout Int) {
   const tmp:Int = c
   c = d
