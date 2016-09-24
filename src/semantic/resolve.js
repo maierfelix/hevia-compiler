@@ -73,6 +73,9 @@ export function resolveType(node) {
       this.resolveType(node.object);
       node.resolvedType = this.resolveExpression(node);
     break;
+    case Type.TernaryExpression:
+      node.resolvedType = this.resolveExpression(node);
+    break;
     default:
       this.throw(`Unsupported '${this.getNodeKindAsString(node)}' node type`);
     break;
@@ -137,13 +140,33 @@ export function resolveExpression(node) {
       return (node.resolvedType);
     break;
     case Type.MemberExpression:
-      let res = this.resolveMemberExpression(node);
       return (this.resolveMemberExpression(node));
+    break;
+    case Type.TernaryExpression:
+      return (this.resolveTernaryExpression(node));
     break;
     default:
       this.throw(`Unsupported expression: '${this.getNodeKindAsString(node)}'`);
     break;
   };
+}
+
+/**
+ * @param {Node} node
+ * @return {Node}
+ */
+export function resolveTernaryExpression(node) {
+  let expr = node.test.resolvedType.value;
+  let consequent = node.consequent.resolvedType.value;
+  let alternate = node.alternate.resolvedType.value;
+  if (expr !== "Boolean") {
+    this.throw(`'TernaryExpression' expected 'Boolean' as test, but got '${expr}'`);
+  }
+  // result types have to match
+  if (consequent !== alternate) {
+    this.throw(`'TernaryExpression' has mismatching types '${consequent}' and '${alternate}'`);
+  }
+  return (node.consequent.resolvedType);
 }
 
 /**

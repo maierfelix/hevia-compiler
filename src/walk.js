@@ -86,13 +86,6 @@ export function TypeExpression(node) {
 /**
  * @param {Node} node
  */
-export function MemberExpression(node) {
-  this.expectNodeKind(node, Type.MemberExpression);
-}
-
-/**
- * @param {Node} node
- */
 export function VariableDeclaration(node) {
   this.expectNodeKind(node, Type.VariableDeclaration);
   let symbol = TT[node.symbol].toLowerCase();
@@ -252,4 +245,14 @@ export function IfStatement(node) {
 export function MemberExpression(node) {
   this.expectNodeKind(node, Type.MemberExpression);
   this.walkNode(node.object, node);
+}
+
+/**
+ * @param {Node} node
+ */
+export function TernaryExpression(node) {
+  this.expectNodeKind(node, Type.TernaryExpression);
+  this.walkNode(node.test, node);
+  this.walkNode(node.consequent, node);
+  this.walkNode(node.alternate, node);
 }

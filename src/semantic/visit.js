@@ -115,3 +115,12 @@ export function ReturnStatement(node) {
     this.throw(`'${target}' returns '${returnContext}' but got '${returnType}'`);
   }
 }
+
+/**
+ * @param {Node} node
+ */
+export function TernaryExpression(node) {
+  this.resolveType(node);
+  let type = node.resolvedType.value;
+  this.resolveReturnType(node, type);
+}
