@@ -62,7 +62,16 @@ export function VariableDeclaration(node) {
  */
 export function BinaryExpression(node) {
   this.resolveType(node);
-  let type = this.resolveBinaryExpression(node).value;
+  let type = node.resolvedType.value;
+  this.resolveReturnType(node, type);
+}
+
+/**
+ * @param {Node} node
+ */
+export function MemberExpression(node) {
+  this.resolveType(node);
+  let type = node.resolvedType.value;
   this.resolveReturnType(node, type);
 }
 

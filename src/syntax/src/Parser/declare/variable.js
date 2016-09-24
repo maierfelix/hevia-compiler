@@ -19,7 +19,6 @@ export function parseVariableDeclaration() {
   let node = this.createNode(Type.VariableDeclaration);
 
   if (
-    this.peek(TT.VAR) ||
     this.peek(TT.LET) ||
     this.peek(TT.CONST)
   ) {

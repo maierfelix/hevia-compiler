@@ -25,7 +25,6 @@ export function parseDeclarationStatement() {
     case TT.IMPORT:
       node = this.parseImport();
     break;
-    case TT.VAR:
     case TT.LET:
     case TT.CONST:
       node = this.parseVariableDeclaration();

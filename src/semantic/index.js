@@ -108,3 +108,12 @@ export function getDeclarationName(node) {
     break;
   };
 }
+
+/**
+ * @return {Scope}
+ */
+export function getThisContext() {
+  return (
+    this.returnContext.parent.context
+  );
+}

@@ -159,6 +159,31 @@ class Compiler {
   }
 
   /**
+   * @param {Node} node
+   * @return {Boolean}
+   */
+  isThisNode(node) {
+    return (
+       node.value << 0 === TT.THIS
+    );
+  }
+
+  /**
+   * @param {String} name
+   * @return {Boolean}
+   */
+  isConstant(name) {
+    let resolve = this.scope.resolve(name);
+    if (resolve && resolve.init) {
+      let parent = resolve.init.parent
+      if (parent.kind === Type.VariableDeclaration) {
+        return (parent.isConstant);
+      }
+    }
+    return (false);
+  }
+
+  /**
    * @param {String} name
    * @return {Boolean}
    */

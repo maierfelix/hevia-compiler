@@ -40,7 +40,6 @@ export function parseStatement() {
       node = this.parseReturnStatement();
     break;
     /** Declaration statement */
-    case TT.VAR:
     case TT.LET:
     case TT.CONST:
     case TT.IMPORT:

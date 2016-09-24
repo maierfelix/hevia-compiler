@@ -15,20 +15,31 @@ swap(a, b);
 
 const e:Int = 42
 
-class Miao {
-  constructor() {
-
+class Point {
+  let xx:Double = 1337.5;
+  let yy:Double = 1338.5;
+  constructor(aa:Double, bb:Double) {
+    if (true) {
+      this.xx = aa;
+      this.yy = bb;
+    }
   }
 }
 
 class Vector {
-  let x:Miao = Miao();
-  let y:Miao = Miao();
-  constructor(x: Int, y:Int) {
+  let x:Int = 0;
+  let y:Int = 0;
+  let parent:Vector = nil;
+  constructor(x:Int, y:Int) {
     this.x = x;
     this.y = y;
   }
 }
+
+let vecTest:Vector = Vector(5, 10);
+vecTest.parent = Vector(15, 20);
+let vecTest2:Vector = vecTest.parent;
+let vecTest3:Int = vecTest.parent.parent.x;
 
 infix operator $ {
   associativity left
@@ -61,15 +72,9 @@ infix operator meow {
 
 let vecA:Vector = Vector(a, 2 * 745);
 let vecB:Vector = Vector(b, 5);
-b = (Vector(a, 2) equals vecB) meow false; // this doesnt work right now
+b = (Vector(a, 2) equals vecB) meow false;
 
 let rofl:Int = 1337 $ (2 $ (vecA equals vecB)) meow false;
-
-func test()->Double {
-  return (1337.6);
-}
-
-test();
 
 let result:Boolean = nil
 if (false == true) {
@@ -78,3 +83,12 @@ if (false == true) {
   result = false;
 }
 
+infix operator HAX {
+  associativity right
+  precedence 160
+  constructor(left: inout Int, right:Int)->Int {
+    left = left + right;
+  }
+}
+
+a HAX e;

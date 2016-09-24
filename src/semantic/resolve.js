@@ -70,6 +70,7 @@ export function resolveType(node) {
       this.resolveIdentifier(node.resolvedType.value);
     break;
     case Type.MemberExpression:
+      this.resolveType(node.object);
       node.resolvedType = this.resolveExpression(node);
     break;
     default:
@@ -136,6 +137,7 @@ export function resolveExpression(node) {
       return (node.resolvedType);
     break;
     case Type.MemberExpression:
+      let res = this.resolveMemberExpression(node);
       return (this.resolveMemberExpression(node));
     break;
     default:
@@ -145,38 +147,62 @@ export function resolveExpression(node) {
 }
 
 /**
- * TODO: support deep members
  * @param {Node} node
  * @return {Node}
  */
 export function resolveMemberExpression(node) {
+
   let object = node.object;
-  let isThis = object.value << 0 === TT.THIS;
-  let property = node.property.value;
-  let objectType = this.resolveLiteral(object).value;
-  let returnType = null;
-  // validate members
-  let properties = null;
-  // default member property
+  let property = node.property;
+  let isThis = this.isThisNode(object);
+
+  // object member
   if (!isThis) {
-    properties = this.scope.resolve(objectType).body;
-    for (let prop of properties.body) {
-      if (prop.isClassProperty && prop.kind === Type.VariableDeclaration) {
-        if (property === prop.name.value) {
-          returnType = prop.init.resolvedType;
-          break;
+    let resolve = this.resolveExpression(object);
+    let obj = this.scope.resolve(resolve.value);
+    if (!resolve || !obj) {
+      let name = object.property ? object.property.value : object.value;
+      this.throw(`'${name}' does not have member '${property.value}'`);
+    }
+    let returnType = this.resolveObjectMemberProperty(obj, property.value);
+    if (!returnType) {
+      this.throw(`'${obj.name}' does not have member '${property.value}'`);
+    }
+    return (returnType.type);
+  }
+
+  // local member
+  let context = this.getThisContext();
+  let entry = context.table[property.value];
+  if (!entry) {
+    let name = isThis ? "this" : object.value;
+    this.throw(`'${name}' does not have member '${property.value}'`);
+  }
+  return (entry.type);
+
+}
+
+/**
+ * @param {Node} node
+ * @param {String} property
+ * @return {Node}
+ */
+export function resolveObjectMemberProperty(node, property) {
+  switch(node.kind) {
+    case Type.ClassDeclaration:
+      for (let sub of node.body.body) {
+        if (!(sub.isClassProperty)) continue;
+        let resolve = node.context.resolve(sub.name.value);
+        if (resolve && resolve.name.value === property) {
+          return (resolve);
         }
-      }
-    };
+      };
+    break;
+    default:
+      this.throw(`Unsupported member resolve node kind ${this.getNodeKindAsString(node)}`);
+    break;
   }
-  // this property
-  else {
-    returnType = this.scope.resolve(property).type || null;
-  }
-  if (returnType === null) {
-    this.throw(`'${objectType}' does not have member '${property}'`);
-  }
-  return (returnType);
+  return (null);
 }
 
 /**
@@ -194,8 +220,25 @@ export function resolveBinaryExpression(node) {
     let args = op.ctor.arguments;
     let left = args[0].type.value;
     let right = args[1].type.value;
+    // prevent passing constants as inout
+    if (args[0].isReference && this.isConstant(node.left.value)) {
+      this.throw(`Constant '${node.left.value}' is immutable`);
+    }
+    // make sure left parameter is mutable if inout
+    if (
+      args[0].isReference &&
+      node.left.type !== Token.Identifier
+    ) this.throw(`Left side of ${op.operator} is not mutable`);
     if (left !== leftType) {
       this.throw(`Operator '${op.operator}' expected '${left}' but got '${leftType}'`);
+    }
+    // make sure right parameter is mutable if inout
+    if (
+      args[1].isReference &&
+      node.right.type !== Token.Identifier
+    ) this.throw(`Right side of ${op.operator} is not mutable`);
+    if (args[1].isReference && this.isConstant(node.right.value)) {
+      this.throw(`Constant '${node.right.value}' is immutable`);
     }
     if (right !== rightType) {
       this.throw(`Operator '${op.operator}' expected '${right}' but got '${rightType}'`);
@@ -210,15 +253,25 @@ export function resolveBinaryExpression(node) {
       leftType
     );
     if (this.isAssignmentOperator(node)) {
-      // only allow assignment to identifiers
-      if (node.left.type !== Token.Identifier) {
-        this.throw(`Cannot assign to a '${this.getNodeTypeAsString(node.left)}'`);
+      if (this.isConstant(node.left.value)) {
+        this.throw(`Constant '${node.left.value}' is immutable`);
+      }
+      let resolve = null;
+      let leftIsMember = node.left.kind === Type.MemberExpression;
+      // only allow assignment to identifiers and members
+      if (node.left.type !== Token.Identifier && !leftIsMember) {
+        let msg = this.isThisNode(node.left) ? "this" : this.getNodeTypeAsString(node.left);
+        this.throw(`Cannot assign to '${msg}'`);
       }
       returnType = this.createFakeLiteral(returns);
-      let resolve = this.scope.resolve(node.left.value);
+      if (leftIsMember) {
+        resolve = node.left.resolvedType;
+      } else {
+        resolve = this.scope.resolve(node.left.value).type;
+      }
       // assign expr type has to match identifier type
-      if (resolve.type.value !== returnType.value) {
-        this.throw(`Cannot assign value of type '${returnType.value}' to type '${resolve.type.value}'`);
+      if (resolve.value !== returnType.value) {
+        this.throw(`Cannot assign value of type '${returnType.value}' to type '${resolve.value || resolve.value}'`);
       }
     } else {
       returnType = this.getNativeOperatorType(node);
@@ -277,7 +330,7 @@ export function resolveParameter(node, arg, index) {
     }
     let resolvedVariable = this.resolveVariableDeclaration(arg.value);
     let isContant = this.scope.resolve(arg.value).init.parent.isConstant;
-    // disallow constants as inout argument
+    // dont allow constants as inout argument
     if (isContant) {
       this.throw(`Cannot pass immutable '${arg.value}' as reference`);
     }
@@ -289,7 +342,8 @@ export function resolveParameter(node, arg, index) {
  */
 export function resolveReturnType(node, type) {
   let parent = node.parent;
-  if (parent && parent.kind === Type.VariableDeclaration) {
+  if (!parent) return void 0;
+  if (parent.kind === Type.VariableDeclaration) {
     let declaration = parent.declaration;
     let parentType = declaration.type.value;
     // assign to null is allowed
