@@ -7,14 +7,15 @@
 <br/>
 
 <div align="center">
-  <a href="https://travis-ci.org/maierfelix/hevia-compiler">
-    <img src="https://img.shields.io/travis/maierfelix/hevia-compiler/master.svg?style=flat-square" alt="Build Status" />
-  </a>
   <a href="#">
     <img src="https://img.shields.io/badge/Target-JS-f1e05a.svg?style=flat-square" alt="Target JS" />
   </a>
   <a href="#">
     <img src="https://img.shields.io/badge/Target-C-353535.svg?style=flat-square" alt="Target C" />
+  </a>
+  <br/>
+  <a href="https://travis-ci.org/maierfelix/hevia-compiler">
+    <img src="https://img.shields.io/travis/maierfelix/hevia-compiler/master.svg?style=flat-square" alt="Build Status" />
   </a>
   <a href="https://github.com/maierfelix/hevia-compiler/blob/master/LICENSE">
     <img src="https://img.shields.io/badge/MIT-License-blue.svg?style=flat-square" alt="License" />
