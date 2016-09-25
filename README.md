@@ -1,5 +1,31 @@
-# Hevia Compiler
-Swift-like strongly typed language that compiles to C and JavaScript
+<h1 align="center">Hevia Compiler</h1>
+
+<div align="center">
+  <strong>Swift-like strongly typed language that compiles to C and JavaScript.</strong>
+</div>
+
+<br/>
+
+<div align="center">
+  <a href="https://travis-ci.org/maierfelix/hevia-compiler">
+    <img src="https://img.shields.io/travis/maierfelix/hevia-compiler/master.svg?style=flat-square" alt="Build Status" />
+  </a>
+  <a href="#">
+    <img src="https://img.shields.io/badge/Target-JS-f1e05a.svg?style=flat-square" alt="Target JS" />
+  </a>
+  <a href="#">
+    <img src="https://img.shields.io/badge/Target-C-353535.svg?style=flat-square" alt="Target C" />
+  </a>
+  <a href="https://github.com/maierfelix/hevia-compiler/blob/master/LICENSE">
+    <img src="https://img.shields.io/badge/MIT-License-blue.svg?style=flat-square" alt="License" />
+  </a>
+  <a href="https://www.npmjs.com/package/hevia">
+    <img src="https://img.shields.io/npm/v/hevia-compiler.svg?style=flat-square" alt="NPM Version" />
+  </a>
+  <a href="https://nodejs.org/api/documentation.html#documentation_stability_index">
+    <img src="https://img.shields.io/badge/stability-experimental-orange.svg?style=flat-square" alt="Stability" />
+  </a>
+</div>
 
 # Syntax
 ````swift
