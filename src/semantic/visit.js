@@ -7,9 +7,9 @@ export function CallExpression(node) {
   let callee = node.callee.value;
   let resolve = this.resolveIdentifier(callee);
   if (!resolve) this.throw(`Cannot resolve callee '${callee}'`);
+  node.isClassCreation = resolve.kind === Type.ClassDeclaration;
   // validate argument counts
-  if (resolve.kind === Type.ClassDeclaration) {
-    node.isClassCall = true;
+  if (node.isClassCreation) {
     this.validateArguments(
       callee,
       resolve.ctor.arguments, node.arguments,
@@ -22,6 +22,9 @@ export function CallExpression(node) {
       resolve.arguments, node.arguments,
       Type.FunctionDeclaration
     );
+  }
+  else {
+    this.throw(`Unknown call ${this.getNodeKindAsString(resolve)}`);
   }
   this.resolveType(node);
   let type = node.resolvedType.value;
@@ -73,6 +76,7 @@ export function MemberExpression(node) {
   this.resolveType(node);
   let type = node.resolvedType.value;
   this.resolveReturnType(node, type);
+  node.isAbsolute = node.object.kind === Type.Literal;
 }
 
 /**

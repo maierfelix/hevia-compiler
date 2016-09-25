@@ -17,7 +17,6 @@ import * as _optimization from "./optimization";
 import * as _optimization_visit from "./optimization/visit";
 
 import * as _synthesis from "./synthesis";
-import * as _synthesis_visit from "./synthesis/visit";
 
 import cmd from "./cli";
 
@@ -75,15 +74,15 @@ class Compiler {
    * @param {String} msg
    */
   write(str) {
-    if (this.compiled) this.content += str;
+    this.content += str;
   }
 
   indent() {
-    if (this.compiled) this.padding++;
+    this.padding++;
   }
 
   outdent() {
-    if (this.compiled) this.padding--;
+    this.padding--;
   }
 
   writeIndent() {
@@ -109,6 +108,7 @@ class Compiler {
    */
   throw(msg) {
     let str = `\x1b[31;1m${msg}\x1b[0m`;
+    console.log(this.content);
     throw new Error(str);
   }
 
@@ -296,11 +296,14 @@ class Compiler {
     if (!target in _synthesis) {
       this.throw(`Target '${target}' is unsupported`);
     }
-    this.ast = this.parse(str);
+    inherit(Compiler, _synthesis[target]);
     this.ast = this.parse(str);
     this.enterPhase("semantic");
+    // a second time to trace pointers
+    this.enterPhase("semantic");
     this.enterPhase("optimization");
-    this.enterPhase("synthesis");
+    this.enterPhase("synthesis", false);
+    this.emitProgram(this.ast, null);
     console.log("----------------");
     console.log(this.content);
     //console.log("=>", vm.runInNewContext(this.content, {}));
@@ -313,11 +316,11 @@ class Compiler {
     states.SYNTHESIS = false;
   }
 
-  enterPhase(state) {
+  enterPhase(state, walk) {
     this.currentState = state.toLowerCase();
     this.resetStates();
     this.states[state.toUpperCase()] = true;
-    this.walk(this.ast);
+    if (walk !== false) this.walk(this.ast);
   }
 
   /**
@@ -364,7 +367,6 @@ const compiler = new Compiler();
 
 compiler.registerVisitors(_semantic_visit, "semantic");
 compiler.registerVisitors(_optimization_visit, "optimization");
-compiler.registerVisitors(_synthesis_visit, "synthesis");
 
 try {
   compiler.compile(cmd.input, "js");

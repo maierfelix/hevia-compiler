@@ -64,10 +64,20 @@ export function resolveType(node) {
         this.throw(`Unsupported '${this.getNodeKindAsString(resolve)}' node type`);
       }
       this.resolveIdentifier(node.resolvedType.value);
+      node.resolvedType.isInstantiatedClass = true;
     break;
     case Type.Literal:
       node.resolvedType = this.resolveLiteral(node);
       this.resolveIdentifier(node.resolvedType.value);
+      if (!node.isParameter) {
+        let resolve = this.scope.resolve(node.value);
+        if (resolve && resolve.init && resolve.init.parent.kind === Type.VariableDeclaration) {
+          let parent = resolve.init.parent;
+          if (!this.isNativeType(node.value)) {
+            node.isReference = !!parent.declaration.isPointer;
+          }
+        }
+      }
     break;
     case Type.MemberExpression:
       this.resolveType(node.object);
@@ -89,6 +99,7 @@ export function resolveType(node) {
 export function resolveLiteral(node) {
   let resolve = this.scope.resolve(node.value);
   if (resolve !== null) {
+    node.isReference = resolve.isReference;
     if (resolve.kind === Type.TypeExpression) {
       return (resolve.type);
     }
@@ -183,13 +194,34 @@ export function resolveMemberExpression(node) {
   if (!isThis) {
     let resolve = this.resolveExpression(object);
     let obj = this.scope.resolve(resolve.value);
+    let name = object.property ? object.property.value : object.value;
     if (!resolve || !obj) {
-      let name = object.property ? object.property.value : object.value;
       this.throw(`'${name}' does not have member '${property.value}'`);
     }
     let returnType = this.resolveObjectMemberProperty(obj, property.value);
     if (!returnType) {
       this.throw(`'${obj.name}' does not have member '${property.value}'`);
+    }
+    // static class member access
+    if (node.isAbsolute && obj.kind === Type.ClassDeclaration) {
+      // prevent non static values from getting changed
+      if (returnType.init.parent.isStatic !== true) {
+
+        let resolveAbsolute = this.scope.resolve(name);
+
+        // Direct static class member access
+        if (resolveAbsolute.kind === Type.ClassDeclaration) {
+          this.throw(`Cannot access non-static member '${name}.${property.value}'`);
+        }
+
+        if (!resolveAbsolute.isArgument) {
+          let isInstantiatedClass = resolveAbsolute.init.resolvedType.isInstantiatedClass;
+          if (!isInstantiatedClass) {
+            this.throw(`Cannot access non-static member '${name}.${property.value}'`);
+          }
+        }
+
+      }
     }
     return (returnType.type);
   }
@@ -290,11 +322,15 @@ export function resolveBinaryExpression(node) {
       if (leftIsMember) {
         resolve = node.left.resolvedType;
       } else {
-        resolve = this.scope.resolve(node.left.value).type;
+        resolve = this.scope.resolve(node.left.value);
+        if (resolve && resolve.kind === Type.ClassDeclaration) {
+          this.throw(`'${resolve.name}' is immutable`);
+        }
+        resolve = resolve.type;
       }
       // assign expr type has to match identifier type
       if (resolve.value !== returnType.value) {
-        this.throw(`Cannot assign value of type '${returnType.value}' to type '${resolve.value || resolve.value}'`);
+        this.throw(`Cannot assign value of type '${returnType.value}' to type '${resolve.value}'`);
       }
     } else {
       returnType = this.getNativeOperatorType(node);

@@ -20,8 +20,8 @@ export function inherit(cls, prot) {
  */
 export function getType(value) {
   if (typeof value === "string") return ("String");
-  if (+value === value && !(value % 1)) return ("Int");
-  if (+value === value) return ("Double");
+  if (Number(value) === value && value % 1 === 0) return ("Int");
+  if (Number(value) === value && value % 1 !== 0) return ("Double");
   return ("Void");
 }
 
