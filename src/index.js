@@ -1,5 +1,6 @@
 import fs from "fs";
 import vm from "vm";
+import cmd from "./cli";
 import hevia from "./syntax";
 import Scope from "./semantic/scope";
 
@@ -14,11 +15,9 @@ import * as _semantic_visit from "./semantic/visit";
 import * as _semantic_resolve from "./semantic/resolve";
 
 import * as _optimization from "./optimization";
-import * as _optimization_visit from "./optimization/visit";
+import * as _optimization_rename from "./optimization/rename";
 
 import * as _synthesis from "./synthesis";
-
-import cmd from "./cli";
 
 /**
  * @class Compiler
@@ -29,7 +28,6 @@ class Compiler {
   constructor() {
 
     this.padding = 0;
-    this.spacing = 2;
 
     this.content = "";
 
@@ -54,6 +52,8 @@ class Compiler {
       SYNTHESIS: false
     };
 
+    this.insideClass = false;
+
   }
 
   /**
@@ -77,6 +77,16 @@ class Compiler {
     this.content += str;
   }
 
+  /**
+   * @param {String} msg
+   */
+  writeInject(str) {
+    this.write(";");
+    this.write("\n");
+    this.writeIndent();
+    this.write(str);
+  }
+
   indent() {
     this.padding++;
   }
@@ -88,9 +98,8 @@ class Compiler {
   writeIndent() {
     let ii = this.padding;
     while (ii > 0) {
-      ii -= this.spacing;
-      let spaces = this.spacing;
-      while (spaces-- > 0) this.write(" ");
+      ii--;
+      this.write("  ");
     };
   }
 
@@ -301,9 +310,10 @@ class Compiler {
     this.enterPhase("semantic");
     // a second time to trace pointers
     this.enterPhase("semantic");
-    this.enterPhase("optimization");
+    this.enterPhase("optimization", false);
     this.enterPhase("synthesis", false);
-    this.emitProgram(this.ast, null);
+    this.ozProgram(this.ast);
+    this.emitProgram(this.ast);
     console.log("----------------");
     console.log(this.content);
     //console.log("=>", vm.runInNewContext(this.content, {}));
@@ -362,11 +372,11 @@ inherit(Compiler, _walk);
 inherit(Compiler, _semantic);
 inherit(Compiler, _semantic_resolve);
 inherit(Compiler, _optimization);
+inherit(Compiler, _optimization_rename);
 
 const compiler = new Compiler();
 
 compiler.registerVisitors(_semantic_visit, "semantic");
-compiler.registerVisitors(_optimization_visit, "optimization");
 
 try {
   compiler.compile(cmd.input, "js");

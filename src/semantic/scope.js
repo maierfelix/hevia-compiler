@@ -1,3 +1,7 @@
+import { TT, Type, Token, Operator } from "../token";
+
+import * as CFG from "../cfg";
+
 /**
  * @class Scope
  * @export
@@ -29,6 +33,24 @@ export default class Scope {
      */
     this.table = {};
 
+    this.native = {
+      print: {
+        kind: Type.FunctionDeclaration,
+        arguments: []
+      }
+    };
+
+    this.index = 0;
+
+  }
+
+  /**
+   * @return {Number}
+   */
+  getUid() {
+     return (
+      CFG.RENAME_INDEX++
+    );
   }
 
   /**
@@ -39,11 +61,29 @@ export default class Scope {
     let local = this.table[name];
     if (local !== void 0) return (local);
     else {
+      if (this.isNativeSymbol(name)) {
+        return (this.native[name]);
+      }
       if (this.parent !== null) {
         return (this.parent.resolve(name));
       }
     }
     return (null);
+  }
+
+  /**
+   * @param {String} name
+   * @return {Boolean}
+   */
+  isNativeSymbol(name) {
+    switch (name) {
+      case "print":
+        return (true);
+      break;
+      default:
+        return (false);
+      break;
+    }
   }
 
   /**

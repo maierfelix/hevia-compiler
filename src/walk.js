@@ -65,6 +65,8 @@ export function BinaryExpression(node) {
   this.expectNodeKind(node, Type.BinaryExpression);
   this.walkNode(node.left, node);
   this.walkNode(node.right, node);
+  // TODO:
+  // handle left right inout args same as function inout args
 }
 
 /**
@@ -170,6 +172,12 @@ export function OperatorDeclaration(node) {
   this.expectNodeKind(node, Type.OperatorDeclaration);
   this.scope.register(node.operator, node);
   this.pushScope(node);
+  // TODO:
+  // Search for first or second argument assignment
+  // only direct assignment possible, since argument is passed
+  // by reference
+  // If true, then mark operator declaration node as
+  // assignment operator
   this.walkNode(node.body, node);
   this.popScope();
 }

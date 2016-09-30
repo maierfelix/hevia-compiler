@@ -190,11 +190,12 @@ export function resolveMemberExpression(node) {
   let property = node.property;
   let isThis = this.isThisNode(object);
 
+  let resolve = this.resolveExpression(object);
+  let obj = this.scope.resolve(resolve.value);
+  let name = object.property ? object.property.value : object.value;
+
   // object member
   if (!isThis) {
-    let resolve = this.resolveExpression(object);
-    let obj = this.scope.resolve(resolve.value);
-    let name = object.property ? object.property.value : object.value;
     if (!resolve || !obj) {
       this.throw(`'${name}' does not have member '${property.value}'`);
     }
@@ -208,7 +209,6 @@ export function resolveMemberExpression(node) {
       if (returnType.init.parent.isStatic !== true) {
 
         let resolveAbsolute = this.scope.resolve(name);
-
         // Direct static class member access
         if (resolveAbsolute.kind === Type.ClassDeclaration) {
           this.throw(`Cannot access non-static member '${name}.${property.value}'`);
@@ -224,6 +224,17 @@ export function resolveMemberExpression(node) {
       }
     }
     return (returnType.type);
+  // inner static local variable access
+  } else {
+    let resolveAbsolute = this.scope.resolve(property.value);
+    if (resolveAbsolute.init && resolveAbsolute.init.parent !== null) {
+      if (resolveAbsolute.init.parent.isStatic) {
+        if (resolveAbsolute.init.parent.isClassProperty) {
+          let name = resolveAbsolute.init.parent.parent.name;
+          this.throw(`Cannot access uninitialized static property '${resolveAbsolute.name.value}' in class '${name}'`);
+        }
+      }
+    }
   }
 
   // local member
@@ -379,7 +390,7 @@ export function resolveParameter(node, arg, index) {
     args = resolve.ctor.arguments;
   }
   if (args[index] === void 0) {
-    this.throw(`Too much arguments passed for '${callee}'`);
+    this.throw(`'${callee}' cannot be called with arguments`);
   }
   let isReference = args[index].isReference;
   if (isReference) {
