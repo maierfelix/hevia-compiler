@@ -29,7 +29,7 @@
 </div>
 
 # What is it?
-Hevia is a strongly-typed programming language for building cross-platform software. It compiles to straightforward, optimized, readable JavaScript and C source code. Hevia offers features like defining custom operators, inout parameters, enums and a clean, semicolon-less syntax.
+Hevia is a strongly typed programming language for building cross-platform software. It compiles to straightforward, optimized, readable JavaScript and C source code. Hevia offers features like defining custom operators, inout parameters, enums and a clean, semicolon-less syntax.
 
 Garbage collection is not implemented yet.
 
