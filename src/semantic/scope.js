@@ -40,8 +40,6 @@ export default class Scope {
       }
     };
 
-    this.index = 0;
-
   }
 
   /**
@@ -83,20 +81,6 @@ export default class Scope {
       default:
         return (false);
       break;
-    }
-  }
-
-  /**
-   * @param {Number} type
-   * @return {Node}
-   */
-  getByType(type) {
-    if (this.scope && this.scope.kind === type) {
-      return (this.scope);
-    } else {
-      if (this.parent !== null) {
-        return (this.parent.getByType(type));
-      }
     }
   }
 

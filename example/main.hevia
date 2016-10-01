@@ -20,7 +20,7 @@ swap(a, b);
 const e:Int = 42
 
 class Point {
-  static let xx:Double = 1337.5;
+  let xx:Double = 1337.5;
   let yy:Double = 1338.5;
   constructor(aa:Double, bb:Double) {
     if (true) {
@@ -34,7 +34,7 @@ class Point {
   }
 }
 
-Point.xx = 1337.25;
+//Point.xx = 1337.25;
 
 class Vector {
   let x:Int = 0;
@@ -102,13 +102,8 @@ infix operator HAX {
   precedence 160
   constructor(left: inout Int, right:Int)->Int {
     left = left + right;
+    return (left);
   }
 }
 
-let ternary:Boolean = 1 != 2 ? true : Vector(1, 1) equals Vector(2, 2);
-
-a HAX a;
-
-let x1x:Int = ternary ? (((a + 44 * 2) == 1) meow ((a * 2 + 7) == 2)) : 12345;
-
-let ternaryMismatch:Int = true ? false ? 1337.55 : 1338.55 : 0;
+a HAX (b + e);

@@ -28,43 +28,53 @@
   </a>
 </div>
 
-# Syntax
+# What is it?
+Hevia is a strongly-typed programming language for building cross-platform software. It compiles to straightforward, optimized, readable JavaScript and C source code. Hevia offers features like definiton of custom operators, inout parameters and a clean, semicolon-less syntax.
+
+Garbage collection is not implemented yet.
+
+# Examples
+## Swap two variables with a custom operator
 ````swift
-func swap(c: inout Int, d: inout Int) {
-  const tmp:Int = c
-  c = d
-  d = tmp
+let a:Int = 7
+let b:Int = 42
+
+infix operator swap {
+  associativity left
+  precedence 120
+  constructor(lhs: inout Int, rhs:Int) {
+    const tmp:Int = lhs
+    lhs = rhs
+    rhs = tmp
+  }
 }
- 
-let a:Int = 1337
-let b:Int = 1338
- 
-swap(a, b)
- 
-const e:Int = 42
- 
+
+a swap b;
+````
+## Compare two vectors
+````swift
 class Vector {
   let x:Int = 0
   let y:Int = 0
-  constructor(x: Int, y:Int) {
+  constructor(x:Int, y:Int) {
     this.x = x
     this.y = y
   }
 }
- 
+
 infix operator equals {
   associativity left
-  precedence 160
-  constructor(left:Vector, right:Vector) -> Boolean {
+  precedence 90
+  constructor(left:Vector, right:Vector)->Boolean {
     return (
       left.x == right.x &&
       left.y == right.y
-    );
+    )
   }
 }
- 
-let vecA:Vector = Vector(a, 2)
-let vecB:Vector = Vector(b, 5 * 7)
-let vecC:Boolean = vecA equals vecB
-let vecD:Boolean = vecA equals vecB
+
+let vecA:Vector = Vector(2, 2)
+let vecB:Vector = Vector(4, 4)
+
+vecA equals vecB // false
 ````

@@ -109,7 +109,16 @@ class Compiler {
    */
   getOperatorByKind(op) {
     let token = TT[op];
-    return (Operator[token]);
+    return (Operator[token] || null);
+  }
+
+  /**
+   * @param {Node} node
+   * @return {Boolean}
+   */
+  isConstantLiteral(node) {
+    let resolve = this.resolveVariableDeclaration(node.value);
+    return (!!resolve.isConstant);
   }
 
   /**
@@ -190,6 +199,27 @@ class Compiler {
       }
     }
     return (false);
+  }
+
+  /**
+   * @param {Node} node
+   * @return {Node}
+   */
+  getNativeOperatorType(node) {
+    let kind = node.operator;
+    let returns = null;
+    if (
+      kind === TT.LT || kind === TT.LE ||
+      kind === TT.GT || kind === TT.GE ||
+      kind === TT.EQ || kind === TT.NEQ ||
+      kind === TT.AND || kind === TT.OR
+    ) {
+      returns = this.createFakeLiteral("Boolean");
+    }
+    else {
+      returns = this.createFakeLiteral("Int");
+    }
+    return (returns);
   }
 
   /**

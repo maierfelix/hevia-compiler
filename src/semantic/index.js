@@ -9,6 +9,19 @@ import {
 
 /**
  * @param {Node} node
+ * @param {Number} kind
+ */
+export function resolveUpUntil(node, kind) {
+  let parent = node;
+  while (true) {
+    if ((parent = parent.parent) === null) break;
+    if (parent.kind === kind) break;
+  };
+  return (parent);
+}
+
+/**
+ * @param {Node} node
  */
 export function alreadyDeclared(node) {
   let name = node.name.value;
@@ -49,6 +62,19 @@ export function traceLaterParameterReference(node, arg, index) {
   let isReference = args[index].isReference;
   // func argument is inout
   if (isReference) this.traceAsPointer(arg);
+}
+
+/**
+ * @param {Node} node
+ */
+export function traceLaterOperatorReference(node) {
+  let parent = node.parent;
+  let left = parent.left;
+  let right = parent.right;
+  let operator = this.getOperatorByKind(parent.operator);
+  if (operator !== null) {
+    this.resolveCustomOperatorExpression(parent, operator);
+  }
 }
 
 /**

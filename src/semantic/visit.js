@@ -86,6 +86,11 @@ export function Literal(node) {
   //console.log(Token[node.type], node.value);
   this.resolveType(node);
   let type = node.resolvedType.value;
+  if (node.parent.kind === Type.BinaryExpression) {
+    if (!this.isNativeOperator(node.parent)) {
+      this.traceLaterOperatorReference(node);
+    }
+  }
   this.resolveReturnType(node, type);
 }
 
@@ -110,6 +115,9 @@ export function ReturnStatement(node) {
   let expr = node.argument;
   this.resolveType(expr);
   let returnType = expr.resolvedType.value;
+  if (!this.returnContext) {
+    this.throw(`Invalid return context`);
+  }
   let returnContext = this.returnContext.type.value;
   let target = this.getDeclarationName(this.returnContext);
   if (returnContext === "Void") {
@@ -118,6 +126,7 @@ export function ReturnStatement(node) {
   if (returnContext !== returnType) {
     this.throw(`'${target}' returns '${returnContext}' but got '${returnType}'`);
   }
+  this.resolveReturnStatement(node);
 }
 
 /**
@@ -127,4 +136,34 @@ export function TernaryExpression(node) {
   this.resolveType(node);
   let type = node.resolvedType.value;
   this.resolveReturnType(node, type);
+}
+
+/**
+ * @param {Node} node
+ */
+export function FunctionDeclaration(node) {
+  let type = node.type.value;
+  if (type !== "Void" && !node.doesReturn) {
+    this.throw(`Missing return '${type}' in function '${node.name}'`);
+  }
+}
+
+/**
+ * @param {Node} node
+ */
+export function OperatorDeclaration(node) {
+  let type = node.ctor.type.value;
+  if (type !== "Void" && !node.doesReturn) {
+    this.throw(`Missing return '${type}' in operator '${node.operator}'`);
+  }
+}
+
+/**
+ * @param {Node} node
+ */
+export function ClassDeclaration(node) {
+  let type = node.ctor.type.value;
+  if (type !== "Void" && !node.doesReturn) {
+    this.throw(`Missing return '${type}' in class '${node.name}'`);
+  }
 }

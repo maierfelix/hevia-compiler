@@ -143,6 +143,8 @@ export function emitExpression(node) {
     case Type.BinaryExpression:
       let operator = this.getOperatorByKind(node.operator);
       let op = operator.operator || operator.op;
+      let isParenthised = node.isParenthised;
+      if (isParenthised) this.write("(");
       if (this.isNativeOperator(node)) {
         this.emitStatement(node.left);
         this.write(` ${op} `);
@@ -155,6 +157,7 @@ export function emitExpression(node) {
         this.emitStatement(node.right);
         this.write(")");
       }
+      if (isParenthised) this.write(")");
     break;
     case Type.TernaryExpression:
       this.emitStatement(node.test);
@@ -182,6 +185,7 @@ export function emitExpression(node) {
       let value = (
         this.isThisNode(node) ? "this" :
         node.type === Token.BooleanLiteral ? TT[node.value].toLowerCase() :
+        node.type === Token.NullLiteral ? "null" :
         node.value
       );
       if (node.isReference) {

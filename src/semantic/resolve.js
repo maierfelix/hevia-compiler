@@ -69,7 +69,7 @@ export function resolveType(node) {
     case Type.Literal:
       node.resolvedType = this.resolveLiteral(node);
       this.resolveIdentifier(node.resolvedType.value);
-      if (!node.isParameter) {
+      if (!node.isParameter && !node.isOperatorParameter) {
         let resolve = this.scope.resolve(node.value);
         if (resolve && resolve.init && resolve.init.parent.kind === Type.VariableDeclaration) {
           let parent = resolve.init.parent;
@@ -352,23 +352,16 @@ export function resolveBinaryExpression(node) {
 
 /**
  * @param {Node} node
- * @return {Node}
  */
-export function getNativeOperatorType(node) {
-  let kind = node.operator;
-  let returns = null;
-  if (
-    kind === TT.LT || kind === TT.LE ||
-    kind === TT.GT || kind === TT.GE ||
-    kind === TT.EQ || kind === TT.NEQ ||
-    kind === TT.AND || kind === TT.OR
-  ) {
-    returns = this.createFakeLiteral("Boolean");
+export function resolveReturnStatement(node) {
+  let resolve = this.resolveUpUntil(node, Type.FunctionDeclaration);
+  if (resolve === null) {
+    resolve = this.resolveUpUntil(node, Type.ConstructorDeclaration);
   }
-  else {
-    returns = this.createFakeLiteral("Int");
+  if (resolve.kind === Type.ConstructorDeclaration) {
+    resolve = resolve.parent;
   }
-  return (returns);
+  resolve.doesReturn = true;
 }
 
 /**
@@ -385,8 +378,7 @@ export function resolveParameter(node, arg, index) {
   }
   if (resolve.kind === Type.FunctionDeclaration) {
     args = resolve.arguments;
-  }
-  else if (resolve.kind === Type.ClassDeclaration) {
+  } else if (resolve.kind === Type.ClassDeclaration) {
     args = resolve.ctor.arguments;
   }
   if (args[index] === void 0) {
@@ -399,11 +391,45 @@ export function resolveParameter(node, arg, index) {
       this.throw(`Argument '${args[index].name.value}' of '${callee}' is not mutable`);
     }
     let resolvedVariable = this.resolveVariableDeclaration(arg.value);
-    let isContant = this.scope.resolve(arg.value).init.parent.isConstant;
+    let isContant = this.scope.resolve(arg.value).isConstant;
     // dont allow constants as inout argument
     if (isContant) {
       this.throw(`Cannot pass immutable '${arg.value}' as reference`);
     }
+  }
+}
+
+/**
+ * @param {Node} node
+ * @param {Object} operator
+ */
+export function resolveCustomOperatorExpression(node, operator) {
+  let resolveOperator = this.scope.resolve(operator.op);
+  let ctor = resolveOperator.ctor;
+  let left = ctor.arguments[0];
+  let right = ctor.arguments[1];
+  // only allow identifiers as inout arguments
+  if (left.isReference) {
+    if (node.left.type !== Token.Identifier) {
+      this.throw(`'Left' argument of '${ctor.parent.operator}' is not mutable`);
+    }
+    let resolve = this.isConstantLiteral(node.left);
+    if (resolve) {
+      this.throw(`Cannot pass immutable '${node.left.value}' as reference`);
+    }
+    node.left.isOperatorParameter = true;
+    this.traceAsPointer(node.left);
+  }
+  else if (right.isReference) {
+    if (node.right.type !== Token.Identifier) {
+      this.throw(`'Right' argument of '${ctor.parent.operator}' is not mutable`);
+    }
+    let resolve = this.isConstantLiteral(node.right);
+    if (resolve) {
+      this.throw(`Cannot pass immutable '${node.right.value}' as reference`);
+    }
+    node.right.isOperatorParameter = true;
+    this.traceAsPointer(node.right);
   }
 }
 
