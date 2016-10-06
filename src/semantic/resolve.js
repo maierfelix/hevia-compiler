@@ -35,9 +35,11 @@ export function resolveIdentifier(name) {
  * @return {Node}
  */
 export function resolveVariableDeclaration(name) {
-  let identifier = this.resolveIdentifier(name);
+  let resolve = this.resolveIdentifier(name);
+  // argument passed as parameter
+  if (resolve.isArgument) return (resolve);
   return (
-    identifier.init.parent
+    resolve.init.parent
   );
 }
 
@@ -52,19 +54,37 @@ export function resolveType(node) {
       node.resolvedType = this.resolveExpression(node);
     break;
     case Type.CallExpression:
+      let resolve = null;
       let callee = node.callee.value;
-      let resolve = this.scope.resolve(callee);
-      if (resolve.kind === Type.FunctionDeclaration) {
-        node.resolvedType = resolve.type;
+      resolve = this.scope.resolve(callee);
+      if (node.callee.kind === Type.Literal) {
+        if (resolve.kind === Type.FunctionDeclaration) {
+          node.resolvedType = resolve.type;
+          this.validateArguments(
+            callee,
+            resolve.arguments, node.arguments,
+            Type.FunctionDeclaration
+          );
+        }
+        else if (resolve.kind === Type.ClassDeclaration) {
+          node.resolvedType = this.createFakeLiteral(callee);
+          this.validateArguments(
+            callee,
+            resolve.ctor.arguments, node.arguments,
+            Type.ClassDeclaration
+          );
+        }
+        else {
+          this.throw(`Unsupported call to '${this.getNodeKindAsString(resolve)}' node`, node);
+        }
+        this.resolveIdentifier(node.resolvedType.value);
+        node.resolvedType.isInstantiatedClass = true;
+      } else if (node.callee.kind === Type.MemberExpression) {
+        this.resolveType(node.callee);
+        node.resolvedType = node.callee.resolvedType;
+      } else {
+        this.throw(`Invalid callee node kind ${this.getNodeKindAsString(node.callee)}`);
       }
-      else if (resolve.kind === Type.ClassDeclaration) {
-        node.resolvedType = this.createFakeLiteral(callee);
-      }
-      else {
-        this.throw(`Unsupported '${this.getNodeKindAsString(resolve)}' node type`);
-      }
-      this.resolveIdentifier(node.resolvedType.value);
-      node.resolvedType.isInstantiatedClass = true;
     break;
     case Type.Literal:
       node.resolvedType = this.resolveLiteral(node);
@@ -87,7 +107,7 @@ export function resolveType(node) {
       node.resolvedType = this.resolveExpression(node);
     break;
     default:
-      this.throw(`Unsupported '${this.getNodeKindAsString(node)}' node type`);
+      this.throw(`Unsupported '${this.getNodeKindAsString(node)}' node type`, node);
     break;
   };
 }
@@ -99,6 +119,10 @@ export function resolveType(node) {
 export function resolveLiteral(node) {
   let resolve = this.scope.resolve(node.value);
   if (resolve !== null) {
+    // enums are ints
+    if (resolve.isEnumValue) {
+      return (this.createFakeLiteral("Int"));
+    }
     node.isReference = resolve.isReference;
     if (resolve.kind === Type.TypeExpression) {
       return (resolve.type);
@@ -157,7 +181,7 @@ export function resolveExpression(node) {
       return (this.resolveTernaryExpression(node));
     break;
     default:
-      this.throw(`Unsupported expression: '${this.getNodeKindAsString(node)}'`);
+      this.throw(`Unsupported expression: '${this.getNodeKindAsString(node)}'`, node);
     break;
   };
 }
@@ -167,15 +191,15 @@ export function resolveExpression(node) {
  * @return {Node}
  */
 export function resolveTernaryExpression(node) {
-  let expr = node.test.resolvedType.value;
+  let test = node.test.resolvedType.value;
   let consequent = node.consequent.resolvedType.value;
   let alternate = node.alternate.resolvedType.value;
-  if (expr !== "Boolean") {
-    this.throw(`'TernaryExpression' expected 'Boolean' as test, but got '${expr}'`);
+  if (test !== "Boolean") {
+    this.throw(`'TernaryExpression' expected 'Boolean' as test, but got '${test}'`, node.test);
   }
   // result types have to match
   if (consequent !== alternate) {
-    this.throw(`'TernaryExpression' has mismatching types '${consequent}' and '${alternate}'`);
+    this.throw(`'TernaryExpression' has mismatching types '${consequent}' and '${alternate}'`, node);
   }
   return (node.consequent.resolvedType);
 }
@@ -197,11 +221,11 @@ export function resolveMemberExpression(node) {
   // object member
   if (!isThis) {
     if (!resolve || !obj) {
-      this.throw(`'${name}' does not have member '${property.value}'`);
+      this.throw(`'${name}' does not have member '${property.value}'`, property);
     }
     let returnType = this.resolveObjectMemberProperty(obj, property.value);
     if (!returnType) {
-      this.throw(`'${obj.name}' does not have member '${property.value}'`);
+      this.throw(`'${obj.name}' does not have member '${property.value}'`, property);
     }
     // static class member access
     if (node.isAbsolute && obj.kind === Type.ClassDeclaration) {
@@ -211,27 +235,33 @@ export function resolveMemberExpression(node) {
         let resolveAbsolute = this.scope.resolve(name);
         // Direct static class member access
         if (resolveAbsolute.kind === Type.ClassDeclaration) {
-          this.throw(`Cannot access non-static member '${name}.${property.value}'`);
+          this.throw(`Cannot access non-static member '${name}.${property.value}'`, property);
         }
 
         if (!resolveAbsolute.isArgument) {
           let isInstantiatedClass = resolveAbsolute.init.resolvedType.isInstantiatedClass;
           if (!isInstantiatedClass) {
-            this.throw(`Cannot access non-static member '${name}.${property.value}'`);
+            this.throw(`Cannot access non-static member '${name}.${property.value}'`, property);
           }
         }
 
       }
     }
+    if (returnType.isEnumValue) {
+      return (returnType.resolvedType);
+    }
     return (returnType.type);
   // inner static local variable access
   } else {
     let resolveAbsolute = this.scope.resolve(property.value);
+    if (resolveAbsolute === null) {
+      this.throw(`Cannot access uninitialized property '${property.value}'`, property);
+    }
     if (resolveAbsolute.init && resolveAbsolute.init.parent !== null) {
       if (resolveAbsolute.init.parent.isStatic) {
         if (resolveAbsolute.init.parent.isClassProperty) {
           let name = resolveAbsolute.init.parent.parent.name;
-          this.throw(`Cannot access uninitialized static property '${resolveAbsolute.name.value}' in class '${name}'`);
+          this.throw(`Cannot access uninitialized static property '${resolveAbsolute.name.value}' in class '${name}'`, property);
         }
       }
     }
@@ -242,7 +272,7 @@ export function resolveMemberExpression(node) {
   let entry = context.table[property.value];
   if (!entry) {
     let name = isThis ? "this" : object.value;
-    this.throw(`'${name}' does not have member '${property.value}'`);
+    this.throw(`'${name}' does not have member '${property.value}'`, property);
   }
   return (entry.type);
 
@@ -258,14 +288,31 @@ export function resolveObjectMemberProperty(node, property) {
     case Type.ClassDeclaration:
       for (let sub of node.body.body) {
         if (!(sub.isClassProperty)) continue;
-        let resolve = node.context.resolve(sub.name.value);
-        if (resolve && resolve.name.value === property) {
+        let resolve = null;
+        // allow functions and variables as members
+        if (sub.kind === Type.VariableDeclaration) {
+          name = sub.name.value;
+        }
+        else if (sub.kind === Type.FunctionDeclaration) {
+          name = sub.name;
+        }
+        resolve = node.context.resolve(name);
+        if (resolve) {
+          if (resolve.name.value === property) return (resolve);
+          if (resolve.name === property) return (resolve);
+        }
+      };
+    break;
+    case Type.EnumDeclaration:
+      for (let key of node.keys) {
+        if (key.value === property) {
+          let resolve = this.scope.resolve(property);
           return (resolve);
         }
       };
     break;
     default:
-      this.throw(`Unsupported member resolve node kind ${this.getNodeKindAsString(node)}`);
+      this.throw(`Unsupported member resolve node kind ${this.getNodeKindAsString(node)}`, node);
     break;
   }
   return (null);
@@ -288,26 +335,26 @@ export function resolveBinaryExpression(node) {
     let right = args[1].type.value;
     // prevent passing constants as inout
     if (args[0].isReference && this.isConstant(node.left.value)) {
-      this.throw(`Constant '${node.left.value}' is immutable`);
+      this.throw(`Constant '${node.left.value}' is immutable`, node.left);
     }
-    // make sure left parameter is mutable if inout
+    // make sure left parameter is mutable (if inout)
     if (
       args[0].isReference &&
       node.left.type !== Token.Identifier
-    ) this.throw(`Left side of ${op.operator} is not mutable`);
+    ) this.throw(`Left side of ${op.operator} is not mutable`, node.left);
     if (left !== leftType) {
-      this.throw(`Operator '${op.operator}' expected '${left}' but got '${leftType}'`);
+      this.throw(`Operator '${op.operator}' expected '${left}' but got '${leftType}'`, args[0]);
     }
-    // make sure right parameter is mutable if inout
+    // make sure right parameter is mutable (if inout)
     if (
       args[1].isReference &&
       node.right.type !== Token.Identifier
-    ) this.throw(`Right side of ${op.operator} is not mutable`);
+    ) this.throw(`Right side of ${op.operator} is not mutable`, node.right);
     if (args[1].isReference && this.isConstant(node.right.value)) {
-      this.throw(`Constant '${node.right.value}' is immutable`);
+      this.throw(`Constant '${node.right.value}' is immutable`, node.right);
     }
     if (right !== rightType) {
-      this.throw(`Operator '${op.operator}' expected '${right}' but got '${rightType}'`);
+      this.throw(`Operator '${op.operator}' expected '${right}' but got '${rightType}'`, args[1]);
     }
   }
   // native operator
@@ -320,14 +367,14 @@ export function resolveBinaryExpression(node) {
     );
     if (this.isAssignmentOperator(node)) {
       if (this.isConstant(node.left.value)) {
-        this.throw(`Constant '${node.left.value}' is immutable`);
+        this.throw(`Constant '${node.left.value}' is immutable`, node.left);
       }
       let resolve = null;
       let leftIsMember = node.left.kind === Type.MemberExpression;
       // only allow assignment to identifiers and members
       if (node.left.type !== Token.Identifier && !leftIsMember) {
         let msg = this.isThisNode(node.left) ? "this" : this.getNodeTypeAsString(node.left);
-        this.throw(`Cannot assign to '${msg}'`);
+        this.throw(`Cannot assign to '${msg}'`, node.left);
       }
       returnType = this.createFakeLiteral(returns);
       if (leftIsMember) {
@@ -335,13 +382,13 @@ export function resolveBinaryExpression(node) {
       } else {
         resolve = this.scope.resolve(node.left.value);
         if (resolve && resolve.kind === Type.ClassDeclaration) {
-          this.throw(`'${resolve.name}' is immutable`);
+          this.throw(`'${resolve.name}' is immutable`, node.left);
         }
         resolve = resolve.type;
       }
       // assign expr type has to match identifier type
       if (resolve.value !== returnType.value) {
-        this.throw(`Cannot assign value of type '${returnType.value}' to type '${resolve.value}'`);
+        this.throw(`Cannot assign value of type '${returnType.value}' to type '${resolve.value}'`, node);
       }
     } else {
       returnType = this.getNativeOperatorType(node);
@@ -354,14 +401,14 @@ export function resolveBinaryExpression(node) {
  * @param {Node} node
  */
 export function resolveReturnStatement(node) {
-  let resolve = this.resolveUpUntil(node, Type.FunctionDeclaration);
-  if (resolve === null) {
-    resolve = this.resolveUpUntil(node, Type.ConstructorDeclaration);
+  let ctx = this.returnContext;
+  if (ctx === null) {
+    this.throw(`Return statement outside of valid context`, node);
   }
-  if (resolve.kind === Type.ConstructorDeclaration) {
-    resolve = resolve.parent;
+  if (ctx.kind === Type.ConstructorDeclaration) {
+    ctx = ctx.parent;
   }
-  resolve.doesReturn = true;
+  ctx.doesReturn = true;
 }
 
 /**
@@ -371,10 +418,14 @@ export function resolveReturnStatement(node) {
  */
 export function resolveParameter(node, arg, index) {
   let callee = node.callee.value;
+  if (node.callee.kind === Type.MemberExpression) {
+    this.resolveType(node.callee);
+    return void 0;
+  }
   let resolve = this.scope.resolve(callee);
   let args = null;
   if (resolve === null) {
-    this.throw(`Cannot resolve call to '${callee}'`);
+    this.throw(`Cannot resolve call to '${callee}'`, node.callee);
   }
   if (resolve.kind === Type.FunctionDeclaration) {
     args = resolve.arguments;
@@ -382,19 +433,19 @@ export function resolveParameter(node, arg, index) {
     args = resolve.ctor.arguments;
   }
   if (args[index] === void 0) {
-    this.throw(`'${callee}' cannot be called with arguments`);
+    this.throw(`Too much arguments provided for '${callee}'`, node.callee);
   }
   let isReference = args[index].isReference;
   if (isReference) {
     // only allow identifiers as inout argument
     if (arg.type !== Token.Identifier) {
-      this.throw(`Argument '${args[index].name.value}' of '${callee}' is not mutable`);
+      this.throw(`Argument '${args[index].name.value}' of '${callee}' is not mutable`, args[index].name);
     }
     let resolvedVariable = this.resolveVariableDeclaration(arg.value);
-    let isContant = this.scope.resolve(arg.value).isConstant;
+    let isConstant = resolvedVariable.isConstant;
     // dont allow constants as inout argument
-    if (isContant) {
-      this.throw(`Cannot pass immutable '${arg.value}' as reference`);
+    if (isConstant) {
+      this.throw(`Cannot pass immutable '${arg.value}' as reference`, arg);
     }
   }
 }
@@ -411,22 +462,22 @@ export function resolveCustomOperatorExpression(node, operator) {
   // only allow identifiers as inout arguments
   if (left.isReference) {
     if (node.left.type !== Token.Identifier) {
-      this.throw(`'Left' argument of '${ctor.parent.operator}' is not mutable`);
+      this.throw(`'Left' argument of '${ctor.parent.operator}' is not mutable`, node.left);
     }
     let resolve = this.isConstantLiteral(node.left);
     if (resolve) {
-      this.throw(`Cannot pass immutable '${node.left.value}' as reference`);
+      this.throw(`Cannot pass immutable '${node.left.value}' as reference`, node.left);
     }
     node.left.isOperatorParameter = true;
     this.traceAsPointer(node.left);
   }
-  else if (right.isReference) {
+  if (right.isReference) {
     if (node.right.type !== Token.Identifier) {
-      this.throw(`'Right' argument of '${ctor.parent.operator}' is not mutable`);
+      this.throw(`'Right' argument of '${ctor.parent.operator}' is not mutable`, node.right);
     }
     let resolve = this.isConstantLiteral(node.right);
     if (resolve) {
-      this.throw(`Cannot pass immutable '${node.right.value}' as reference`);
+      this.throw(`Cannot pass immutable '${node.right.value}' as reference`, node.right);
     }
     node.right.isOperatorParameter = true;
     this.traceAsPointer(node.right);
@@ -445,7 +496,7 @@ export function resolveReturnType(node, type) {
     // assign to null is allowed
     if (type === "Null") return void 0;
     if (parentType !== type) {
-      this.throw(`'${declaration.name.value}' expected '${parentType}' but got '${type}'`);
+      this.throw(`'${declaration.name.value}' expected '${parentType}' but got '${type}'`, node);
     }
   }
 }

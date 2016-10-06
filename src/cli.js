@@ -11,8 +11,10 @@ cmd
 let input = {};
 
 if (cmd.input) {
-  const file = fs.readFileSync(cmd.input, "utf8");
+  let path = cmd.input;
+  const file = fs.readFileSync(path, "utf8");
   input.input = file;
+  input.path = path;
 }
 
 export default input;

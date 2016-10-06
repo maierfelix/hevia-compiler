@@ -1,48 +1,39 @@
 // vim: syntax=swift
-func swap(c: inout Int, d: inout Int) {
-  const tmp:Int = c
-  c = d
-  d = tmp
-}
+import fibonacci
 
 let a:Int = nil
 let b:Int = 1338
 
-let ccc:Int = 1;
-
-a = 44;
-b = 1339;
-
-ccc = a + b;
-
-swap(a, b);
-
-const e:Int = 42
-
 class Point {
-  let xx:Double = 1337.5;
+  static let xx:Double = 1337.5;
   let yy:Double = 1338.5;
   constructor(aa:Double, bb:Double) {
     if (true) {
-      this.xx = aa;
       this.yy = bb;
     } else if (false) {
       this.yy = 0.5;
-    } else {
-      this.xx = 1337.5;
     }
   }
 }
 
-//Point.xx = 1337.25;
+Point.xx = 1337.25;
 
 class Vector {
   let x:Int = 0;
   let y:Int = 0;
+  let z:Double = 255.7856;
   let parent:Vector = nil;
   constructor(x:Int, y:Int) {
     this.x = x;
     this.y = y;
+    this.z = this.parent.parent.getVector().print();
+  }
+  func print()->Double {
+    return 255.555;
+  }
+  func getVector()->Vector {
+    let vec:Vector = nil;
+    return (vec);
   }
 }
 
@@ -106,4 +97,36 @@ infix operator HAX {
   }
 }
 
-a HAX (b + e);
+let ternary:Boolean = 1 != 2 ? true : Vector(1, 1) equals Vector(2, 2);
+
+a HAX a;
+
+let x1x:Int = ternary ? (((a + 44 * 2) == 1) meow ((a * 2 + 7) == 2)) : 12345;
+
+//let ternaryMismatch:Int = true ? false ? 1337.55 : 1338.55 : 0;
+
+// custom operators
+infix operator °°°° {
+  associativity left
+  precedence 160
+  constructor(left:Int, right:Int)->Int {
+    return (left * right);
+  }
+}
+
+const ccc:Int = 2 °°°° 2 + 5;
+
+// detect if operator does some kind of assignment
+// to prevent constants from being changed
+//ccc = 5;
+
+swap(a, b);
+
+enum Direction {
+  Up,
+  Down,
+  Left,
+  Right
+}
+
+let xD:Int = .Up;

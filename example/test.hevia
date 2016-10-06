@@ -1,0 +1,4 @@
+// vim: syntax=swift
+const TYPE_A:Int = 1330;
+const TYPE_B:Int = 1331;
+const TYPE_C:Int = 1332;

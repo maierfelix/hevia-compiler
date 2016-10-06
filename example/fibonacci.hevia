@@ -1,6 +1,15 @@
-func fibonacci(n:Int) -> Int {
-  if (n == 0 || n == 1) {
-    return n;
+// vim: syntax=swift
+import test
+
+func fibonacci(n: inout Int)->Int {
+  if n == 0 || n == 1 {
+    return n
   }
-  return fibonacci(n - 1) + fibonacci(n - 2);
+  return fibonacci(n)
+}
+
+func swap(c: inout Int, d: inout Int) {
+  let tmp:Int = c
+  c = d
+  d = fibonacci(c)
 }

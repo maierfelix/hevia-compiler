@@ -33,22 +33,6 @@ export default class Scope {
      */
     this.table = {};
 
-    this.native = {
-      print: {
-        kind: Type.FunctionDeclaration,
-        arguments: []
-      }
-    };
-
-  }
-
-  /**
-   * @return {Number}
-   */
-  getUid() {
-     return (
-      CFG.RENAME_INDEX++
-    );
   }
 
   /**
@@ -57,11 +41,12 @@ export default class Scope {
    */
   resolve(name) {
     let local = this.table[name];
-    if (local !== void 0) return (local);
+    if (local !== void 0) {
+      // enum
+      if (local.isEnum) return (local.key);
+      return (local);
+    }
     else {
-      if (this.isNativeSymbol(name)) {
-        return (this.native[name]);
-      }
       if (this.parent !== null) {
         return (this.parent.resolve(name));
       }

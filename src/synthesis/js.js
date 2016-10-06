@@ -44,20 +44,26 @@ export function emitStatement(node) {
   }
   switch (node.kind) {
     case Type.FunctionDeclaration:
-      this.write("var ");
-      this.write(node.name);
+      if (this.insideClass) {
+        this.write(node.parent.name);
+        this.write(".prototype.");
+        this.write(node.name);
+      } else {
+        this.write("var ");
+        this.write(node.name);
+      }
       this.write(" = ");
       this.write("function ");
       this.emitArguments(node.arguments);
       this.emitBlock(node.body);
     break;
     case Type.ClassDeclaration:
-      this.insideClass = true;
       // class
       this.write("function ");
       this.write(node.name);
       this.emitArguments(node.ctor.arguments);
       // fake constructor body
+      this.insideClass = true;
       this.emitBlock(node.body);
       this.insideClass = false;
       for (let key of node.body.body) {
@@ -66,10 +72,17 @@ export function emitStatement(node) {
         }
       };
     break;
+    case Type.EnumDeclaration:
+      this.write("enum_biatch ");
+      this.emitStatement(node.name);
+    break;
     case Type.ConstructorDeclaration:
-      this.write("(function() ");
-      this.emitBlock(node.body);
-      this.write(")()");
+      // only emit if constructors contains sth
+      if (node.body.length) {
+        this.write("(function() ");
+        this.emitBlock(node.body);
+        this.write(").call(this)");
+      }
       // return instance, not necessary?
       if (this.insideClass) {
         //this.writeInject(`return (this)`);
@@ -83,12 +96,12 @@ export function emitStatement(node) {
         this.write("\n");
         this.writeIndent();
         this.write(node.parent.name);
-        this.write(".prototype.");
+        this.write(".");
       }
       else if (this.insideClass) {
         this.write("this.");
       }
-      else if (node.isConstant) this.write("const ");
+      //else if (node.isConstant) this.write("const ");
       else this.write("var ");
       this.write(node.declaration.name.value);
       this.write(" = ");
@@ -131,6 +144,10 @@ export function emitStatement(node) {
       this.emitStatement(node.argument);
       this.write(")");
     break;
+    case Type.ImportDeclaration: break;
+    default:
+      this.throw(`Invalid node kind '${this.getNodeKindAsString(node)}'`);
+    break;
   };
   return void 0;
 }
@@ -141,8 +158,7 @@ export function emitStatement(node) {
 export function emitExpression(node) {
   switch (node.kind) {
     case Type.BinaryExpression:
-      let operator = this.getOperatorByKind(node.operator);
-      let op = operator.operator || operator.op;
+      let op = this.getOperatorAsString(node.operator);
       let isParenthised = node.isParenthised;
       if (isParenthised) this.write("(");
       if (this.isNativeOperator(node)) {
@@ -175,7 +191,7 @@ export function emitExpression(node) {
       if (node.isClassCreation) {
         this.write("new ");
       }
-      this.write(node.callee.value);
+      this.emitStatement(node.callee);
       this.emitParameters(node.arguments);
     break;
     case Type.TypeExpression:
@@ -188,11 +204,14 @@ export function emitExpression(node) {
         node.type === Token.NullLiteral ? "null" :
         node.value
       );
-      if (node.isReference) {
+      if (node.isReference && !node.isParameter) {
         this.write(`${value}.$iov`);
       } else {
         this.write(value);
       }
+    break;
+    default:
+      this.throw(`Invalid node kind '${this.getNodeKindAsString(node)}'`);
     break;
   };
 }

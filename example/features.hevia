@@ -1,11 +1,102 @@
 // vim: syntax=swift
+import fibonacci
 
-// type extensions (native types only?)
-extension Double {
-  func square()->Int {
-    return (self * self);
+let a:Int = nil
+let b:Int = 1338
+
+class Point {
+  static let xx:Double = 1337.5;
+  let yy:Double = 1338.5;
+  constructor(aa:Double, bb:Double) {
+    if (true) {
+      this.xx = aa;
+      this.yy = bb;
+    } else if (false) {
+      this.yy = 0.5;
+    } else {
+      this.xx = 1337.5;
+    }
   }
 }
+
+Point.xx = 1337.25;
+
+class Vector {
+  let x:Int = 0;
+  let y:Int = 0;
+  let parent:Vector = nil;
+  constructor(x:Int, y:Int) {
+    this.x = x;
+    this.y = y;
+  }
+}
+
+let vecTest:Vector = Vector(5, 10);
+vecTest.parent = Vector(15, 20);
+let vecTest2:Vector = vecTest.parent;
+let vecTest3:Int = vecTest.parent.parent.x;
+
+let vecTest4:Vector = Vector(5, 6);
+
+vecTest4.parent = Vector(1, 2);
+
+infix operator $ {
+  associativity left
+  precedence 160
+  constructor(left:Int, right:Boolean)->Boolean {
+    return (left == 1);
+  }
+}
+
+infix operator equals {
+  associativity left
+  precedence 150
+  constructor(left:Vector, right:Vector)->Boolean {
+    return (
+      left.x == right.x &&
+      left.y == right.y
+    );
+  }
+}
+
+infix operator meow {
+  associativity left
+  precedence 150
+  constructor(left:Boolean, right:Boolean)->Int {
+    if (Vector(1, 1) equals Vector(1, 1)) {
+      return (5 + 7 * 44);
+    }
+  }
+}
+
+let vecA:Vector = Vector(a, 2 * 745);
+let vecB:Vector = Vector(b, 5);
+b = (Vector(a, 2) equals vecB) meow false;
+
+let rofl:Int = 1337 $ (2 $ (vecA equals vecB)) meow false;
+
+let result:Boolean = nil
+if (false == true) {
+  result = true;
+} else {
+  result = false;
+}
+
+infix operator HAX {
+  associativity right
+  precedence 160
+  constructor(left: inout Int, right:Int)->Int {
+    left = left + right;
+  }
+}
+
+let ternary:Boolean = 1 != 2 ? true : Vector(1, 1) equals Vector(2, 2);
+
+a HAX a;
+
+let x1x:Int = ternary ? (((a + 44 * 2) == 1) meow ((a * 2 + 7) == 2)) : 12345;
+
+//let ternaryMismatch:Int = true ? false ? 1337.55 : 1338.55 : 0;
 
 // custom operators
 infix operator °°°° {
@@ -16,76 +107,4 @@ func °°°° (left:Int, right:Int)->Int {
   return pow(left, right);
 }
 
-let c:Double = 2.5.double() °°°° 2 == 2;
-
-// test
-class Vector {
-  var x = 0.0
-  var y = 0.0
-}
-
-infix operator equals {
-  associativity left
-  precedence 160
-}
-func equals(left:Vector, right:Vector)->Boolean {
-  return (
-    left.x === right.x &&
-    left.y === right.y
-  );
-}
-
-let vecA:Vector = Vector();
-let vecB:Vector = Vector();
-let vecC:Vector = a equals b;
-// custom operator assignment is determined by:
-// left or right inout && left or right !direct! assignment && no function return type
-
-
-
-
-
-
-
-
-
-
-
-
-func swap(c: inout Int, d: inout Int) {
-  const tmp:Int = c
-  c = d
-  d = tmp
-}
-
-let a:Int = 1337
-let b:Int = 1338
-
-swap(a, b)
-
-const e:Int = 42
-
-class Vector {
-  let x:Int = 0
-  let y:Int = 0
-  constructor(x: Int, y:Int) {
-    this.x = x
-    this.y = y
-  }
-}
-
-infix operator equals {
-  associativity left
-  precedence 160
-  constructor(left:Vector, right:Vector)->Boolean {
-    return (
-      left.x === right.x &&
-      left.y === right.y
-    );
-  }
-}
-
-let vecA:Vector = Vector(a, 2)
-let vecB:Vector = Vector(b, 5 * 7)
-let vecC:Boolean = vecA equals vecB
-let vecD:Boolean = vecA equals vecB
+let ccc:Int = 2 °°°° 2 == 2;

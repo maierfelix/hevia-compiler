@@ -36,6 +36,8 @@ class Compiler {
 
     this.ast = null;
 
+    this.pathScope = null;
+
     /**
      * Used to determine
      * double compilation
@@ -60,9 +62,7 @@ class Compiler {
    * @param {Node} node
    */
   pushScope(node) {
-    if (!this.compiled) {
-      node.context = new Scope(node, this.scope);
-    }
+    node.context = new Scope(node, this.scope);
     this.scope = node.context;
   }
 
@@ -124,10 +124,22 @@ class Compiler {
   /**
    * @param {String} msg
    */
-  throw(msg) {
+  throw(msg, node) {
+    if (node) {
+      let loc = node.loc.start;
+      msg += " " + loc.line + ":" + loc.column;
+    }
     let str = `\x1b[31;1m${msg}\x1b[0m`;
-    console.log(this.content);
     throw new Error(str);
+  }
+
+  /**
+   * @param {String} msg
+   * @param {Number} cc
+   */
+  print(msg, cc) {
+    let str = `\x1b[${cc};1m${msg}\x1b[0m`;
+    console.log(str);
   }
 
   /**
@@ -193,7 +205,7 @@ class Compiler {
   isConstant(name) {
     let resolve = this.scope.resolve(name);
     if (resolve && resolve.init) {
-      let parent = resolve.init.parent
+      let parent = resolve.init.parent;
       if (parent.kind === Type.VariableDeclaration) {
         return (parent.isConstant);
       }
@@ -220,6 +232,16 @@ class Compiler {
       returns = this.createFakeLiteral("Int");
     }
     return (returns);
+  }
+
+  /**
+   * @param {Number} op
+   */
+  getOperatorAsString(op) {
+    let operator = this.getOperatorByKind(op);
+    return (
+      operator.operator || operator.op
+    );
   }
 
   /**
@@ -312,7 +334,7 @@ class Compiler {
       let nodeKind = this.getNodeKindAsString(node);
       let expKind = Type[kind];
       let msg = `Invalid node kind! Expected '${expKind}' but got '${nodeKind}'`;
-      this.throw(msg);
+      this.throw(msg, node);
     }
   }
 
@@ -323,7 +345,7 @@ class Compiler {
   expectNodeProperty(node, property) {
     if (!node.hasOwnProperty(property)) {
       let msg = `'${this.getNodeKindAsString(node)}' doesn't have property '${property}'`;
-      this.throw(msg);
+      this.throw(msg, node);
     }
   }
 
@@ -332,18 +354,22 @@ class Compiler {
    * @param {String} target
    */
   compile(str, target) {
+    let index = cmd.path.lastIndexOf("/");
+    this.pathScope = cmd.path.substring(0, index + 1);
     if (!target in _synthesis) {
       this.throw(`Target '${target}' is unsupported`);
     }
     inherit(Compiler, _synthesis[target]);
-    this.ast = this.parse(str);
-    this.enterPhase("semantic");
+    let ast = this.parse(str);
+    this.ast = ast;
+    this.enterPhase(ast, "semantic");
+    this.compiled = true;
     // a second time to trace pointers
-    this.enterPhase("semantic");
-    this.enterPhase("optimization", false);
-    this.enterPhase("synthesis", false);
-    this.ozProgram(this.ast);
-    this.emitProgram(this.ast);
+    this.enterPhase(ast, "semantic");
+    this.enterPhase(ast, "optimization", false);
+    this.enterPhase(ast, "synthesis", false);
+    this.ozProgram(ast);
+    this.emitProgram(ast);
     console.log("----------------");
     console.log(this.content);
     //console.log("=>", vm.runInNewContext(this.content, {}));
@@ -356,11 +382,11 @@ class Compiler {
     states.SYNTHESIS = false;
   }
 
-  enterPhase(state, walk) {
+  enterPhase(ast, state, walk) {
     this.currentState = state.toLowerCase();
     this.resetStates();
     this.states[state.toUpperCase()] = true;
-    if (walk !== false) this.walk(this.ast);
+    if (walk !== false) this.walk(ast);
   }
 
   /**

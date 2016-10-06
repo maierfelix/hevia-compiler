@@ -45,6 +45,7 @@ let ii = 0;
   Label[Label["OperatorDeclaration"] = ++ii] = "OperatorDeclaration";
   Label[Label["ConstructorDeclaration"] = ++ii] = "ConstructorDeclaration";
   Label[Label["ImportDeclaration"] = ++ii] = "ImportDeclaration";
+  Label[Label["EnumDeclaration"] = ++ii] = "EnumDeclaration";
 
   Label[Label["PseudoProperty"] = ++ii] = "PseudoProperty";
   Label[Label["Identifier"] = ++ii] = "Identifier";

@@ -27,7 +27,7 @@ export function alreadyDeclared(node) {
   let name = node.name.value;
   let resolve = this.scope.resolve(name);
   if (resolve !== null) {
-    this.throw(`'${name}' has already been declared`);
+    this.throw(`'${name}' has already been declared`, node);
   }
 }
 
@@ -129,7 +129,7 @@ export function getDeclarationName(node) {
         return (parent.name);
       }
       else {
-        this.throw(`Unexpected declaration node '${this.getNodeKindAsString(parent)}'`);
+        this.throw(`Unexpected declaration node '${this.getNodeKindAsString(parent)}'`, node);
       }
     break;
   };

@@ -3,7 +3,9 @@
  * Recursively walks nodes,
  * trigger available node visitors
  */
+import fs from "fs";
 import { TT, Type, Token } from "./token";
+import { getUid } from "./utils";
 
 /**
  * @param {Node} node
@@ -11,7 +13,7 @@ import { TT, Type, Token } from "./token";
 export function walk(node) {
   this.expectNodeKind(node, Type.Program);
   this.pushScope(node);
-  this.walkNode(node, null);
+  this.walkNode(node, node);
   this.popScope();
 }
 
@@ -20,10 +22,17 @@ export function walk(node) {
  * @param {Node} parent
  */
 export function walkArray(array, parent) {
-  let ii = 0, length = array.length;
-  for (; ii < length; ++ii) {
-    this.walkNode(array[ii], parent);
-  };
+  let ii = 0;
+  for (; ii < array.length; ++ii) {
+      let node = array[ii];
+      this.walkNode(node, parent);
+      // special case import declaration go one
+      // backwards, so no new inserted node by import
+      // declaration got missing to get walked over
+      if (node.kind === Type.ImportDeclaration) {
+        this.walkNode(array[ii], parent);
+      }
+    };
 }
 
 /**
@@ -37,7 +46,7 @@ export function walkNode(node, parent) {
     this[kind](node, parent);
     this.visit(node);
   }
-  else this.throw(`'${kind}' type isnt supported yet`);
+  else this.throw(`'${kind}' type isnt supported yet`, node);
 }
 
 /**
@@ -117,9 +126,11 @@ export function FunctionDeclaration(node) {
   this.expectNodeKind(node, Type.FunctionDeclaration);
   this.scope.register(node.name, node);
   this.pushScope(node);
+  let tmpCtx = this.returnContext;
   this.returnContext = node;
   this.walkArguments(node);
   this.walkNode(node.body, node);
+  this.returnContext = tmpCtx;
   this.popScope();
 }
 
@@ -190,7 +201,7 @@ export function PrecedenceExpression(node) {
   if (node.parent.kind === Type.OperatorDeclaration) {
     node.parent.precedence = node.level;
   } else {
-    this.throw(`Invalid PrecedenceExpression`);
+    this.throw(`Invalid PrecedenceExpression`, node);
   }
 }
 
@@ -202,7 +213,7 @@ export function AssociativityExpression(node) {
   if (node.parent.kind === Type.OperatorDeclaration) {
     node.parent.associativity = node.associativity;
   } else {
-    this.throw(`Invalid AssociativityExpression`);
+    this.throw(`Invalid AssociativityExpression`, node);
   }
 }
 
@@ -213,8 +224,48 @@ export function ClassDeclaration(node) {
   this.expectNodeKind(node, Type.ClassDeclaration);
   this.scope.register(node.name, node);
   this.pushScope(node);
+
+  // move constructor to very last position, so it
+  // has always access to all local instance members
+  let body = node.body.body;
+  let item = null;
+  let tmp = null;
+  for (let ii = 0; ii < body.length; ++ii) {
+    item = body[ii];
+    if (item.kind === Type.ConstructorDeclaration) {
+      body.splice(ii, 1);
+      body.push(item);
+    }
+  };
+  let count = 0;
+  // prevent definition of multiple constructors
+  body.map((item) => {
+    if (item.kind === Type.ConstructorDeclaration) count++;
+    if (count > 1) this.throw(`Invalid redeclaration of '${parent.name}' constructor`, item);
+  });
+
   this.walkNode(node.body, node);
   this.popScope();
+}
+
+/**
+ * @param {Node} node
+ */
+export function EnumDeclaration(node) {
+  this.expectNodeKind(node, Type.EnumDeclaration);
+  this.expectNodeKind(node.name, Type.Literal);
+  this.scope.register(node.name.value, node);
+  for (let key of node.keys) {
+    //let register = key.kind === Type.BinaryExpression ? key.left : key;
+    let register = key;
+    register.isEnumValue = true;
+    this.scope.register(register.value, {
+      isEnum: true,
+      key: register
+      //expression: key
+    });
+    this.walkNode(key, node);
+  };
 }
 
 /**
@@ -223,9 +274,12 @@ export function ClassDeclaration(node) {
 export function ConstructorDeclaration(node) {
   this.expectNodeKind(node, Type.ConstructorDeclaration);
   this.pushScope(node);
+  let parent = node.parent;
+  let tmpCtx = this.returnContext;
   this.returnContext = node;
   this.walkArguments(node);
   this.walkNode(node.body, node);
+  this.returnContext = tmpCtx;
   this.popScope();
 }
 
@@ -252,6 +306,14 @@ export function IfStatement(node) {
  */
 export function MemberExpression(node) {
   this.expectNodeKind(node, Type.MemberExpression);
+  // seems like we got an enum
+  if (node.object === null) {
+    let property = node.property;
+    let resolve = this.scope.resolve(property.value);
+    if (resolve && resolve.isEnumValue) {
+      node.object = resolve.parent.name;
+    }
+  }
   this.walkNode(node.object, node);
 }
 
@@ -263,4 +325,46 @@ export function TernaryExpression(node) {
   this.walkNode(node.test, node);
   this.walkNode(node.consequent, node);
   this.walkNode(node.alternate, node);
+}
+
+/**
+ * @param {Node} node
+ */
+export function ImportDeclaration(node) {
+  if (node.hasOwnProperty("hash")) return void 0;
+  node.hash = getUid();
+  let nodes = [];
+  node.specifiers.map((item) => {
+    if (item.kind !== Type.Literal) {
+      this.throw(`Invalid import specifier of kind ${this.getNodeKindAsString(item)}`);
+    }
+    let path = this.pathScope + item.value;
+    let src = null;
+    try {
+      let fetch = fs.readFileSync(path + ".hv");
+      src = fetch;
+    } catch (e) {
+      let fetch = fs.readFileSync(path + ".hevia");
+      src = fetch;
+    }
+    let ast = this.parse(src);
+    for (let key of ast.body.body) {
+      nodes.push(key);
+    };
+    this.print(`Imported '${path}'`, 32);
+  });
+  let ii = 0;
+  let absolute = this.resolveUpUntil(node, Type.Program);
+  let body = absolute.body.body;
+  for (; ii < body.length; ++ii) {
+    if (body[ii].hash === node.hash) {
+      body.splice(ii, 1);
+      let kk = nodes.length - 1;
+      // insert backwards to stay in correct order
+      for (; kk >= 0; --kk) {
+        body.unshift(nodes[kk]);
+      };
+      break;
+    }
+  };
 }

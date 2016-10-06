@@ -26,6 +26,7 @@ import * as comments from "./comment";
 import * as statements from "./statement";
 
 /** Declarations */
+import * as enums from "./declare/enum";
 import * as classes from "./declare/class";
 import * as imports from "./declare/import";
 import * as functions from "./declare/function";
@@ -105,6 +106,7 @@ inherit(Parser, comments);
 inherit(Parser, accesses);
 inherit(Parser, statements);
 
+inherit(Parser, enums);
 inherit(Parser, imports);
 inherit(Parser, classes);
 inherit(Parser, functions);

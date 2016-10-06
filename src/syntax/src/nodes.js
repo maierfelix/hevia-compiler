@@ -57,6 +57,18 @@ export default class Node {
     );
   }
 
+  static get EnumDeclaration() {
+    return (
+      class EnumDeclaration {
+        constructor() {
+          this.kind = Type.EnumDeclaration;
+          this.name = null;
+          this.keys = [];
+        }
+      }
+    );
+  }
+
   static get ImportDeclaration() {
     return (
       class ImportDeclaration {
