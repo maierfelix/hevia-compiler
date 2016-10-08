@@ -122,6 +122,8 @@ const ccc:Int = 2 °°°° 2 + 5;
 
 swap(a, b);
 
+a HAX a;
+
 enum Direction {
   Up,
   Down,
@@ -129,4 +131,5 @@ enum Direction {
   Right
 }
 
-let xD:Int = .Up;
+let aEnum:Int = .Left;
+let bEnum:Int = Direction.Up;

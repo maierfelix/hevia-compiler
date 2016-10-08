@@ -5,19 +5,22 @@ import { TT, Type, Token, Operator } from "../token";
  */
 export function emitProgram(node) {
 	this.expectNodeKind(node, Type.Program);
-	this.emitBlock(node.body);
+	this.emitBlock(node.body, false);
 }
 
 /**
  * @param {Node} node
  */
-export function emitBlock(node) {
+export function emitBlock(node, braced) {
 	this.expectNodeKind(node, Type.BlockStatement);
   let ii = 0;
   let length = node.body.length;
   let statement = null;
-  this.write("{\n");
-  this.indent();
+  let isBraced = braced !== false;
+  if (isBraced) {
+  	this.write("{\n");
+  	this.indent();
+	}
   for (; ii < length; ++ii) {
     statement = node.body[ii];
     this.writeIndent();
@@ -25,10 +28,12 @@ export function emitBlock(node) {
     this.write(";");
     if (ii + 1 < length) this.write("\n");
   };
-  this.write("\n");
-  this.outdent();
-  this.writeIndent();
-	this.write("}");
+  if (isBraced) {
+	  this.write("\n");
+	  this.outdent();
+	  this.writeIndent();
+		this.write("}");
+	}
 }
 
 /**
@@ -116,12 +121,51 @@ export function emitStatement(node) {
 			this.write(value);
 		break;
 		case Type.MemberExpression:
-			this.emitStatement(node.object);
-			this.write("->");
-			this.emitStatement(node.property);
+			if (node.isEnum) {
+				this.emitStatement(node.property);
+			} else {
+				this.emitStatement(node.object);
+				this.write("->");
+				this.emitStatement(node.property);
+			}
 		break;
 		case Type.ConstructorDeclaration:
 			if (this.insideClassBody) return void 0;
+		break;
+		case Type.IfStatement:
+			let parent = node.parent;
+      if (node.test !== null) {
+        if (parent && parent.kind === Type.IfStatement) {
+          this.write(" else ");
+        }
+        this.write("if (");
+        this.emitStatement(node.test);
+        this.write(") ");
+      } else {
+        this.write(" else ");
+      }
+      this.emitBlock(node.consequent);
+      if (node.alternate !== null) {
+        this.emitStatement(node.alternate);
+      }
+		break;
+		case Type.EnumDeclaration:
+			this.write("enum ");
+			this.emitStatement(node.name);
+			this.write(" ");
+			this.write("{\n");
+			this.indent();
+			let ii = 0;
+			let length = node.keys.length;
+			for (; ii < length; ++ii) {
+				this.writeIndent();
+				this.emitStatement(node.keys[ii]);
+				if (ii + 1 < length) this.write(",\n");
+			};
+			this.outdent();
+			this.write("\n");
+			this.writeIndent();
+			this.write("}\n");
 		break;
 		default:
 			this.throw(`Unknown node of kind '${this.getNodeKindAsString(node)}'`);

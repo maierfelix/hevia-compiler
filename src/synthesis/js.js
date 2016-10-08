@@ -73,8 +73,32 @@ export function emitStatement(node) {
       };
     break;
     case Type.EnumDeclaration:
-      this.write("enum_biatch ");
+      let name = node.name.value;
+      this.write("var ");
       this.emitStatement(node.name);
+      this.write(";\n");
+      this.writeIndent();
+      this.write(`(function(${name}) {\n`);
+      let ii = 0;
+      let length = node.keys.length;
+      this.indent();
+      for (; ii < length; ++ii) {
+        let value = node.keys[ii].value;
+        this.writeIndent();
+        this.write(name);
+        this.write("[");
+        this.write(name);
+        this.write(`["${value}"]`);
+        this.write(" = ");
+        this.write(ii);
+        this.write("]");
+        this.write(" = ");
+        this.write(`"${value}"`);
+        this.write(";\n");
+      };
+      this.writeIndent();
+      this.outdent();
+      this.write(`})(${name} || (${name} = {}))`);
     break;
     case Type.ConstructorDeclaration:
       // only emit if constructors contains sth

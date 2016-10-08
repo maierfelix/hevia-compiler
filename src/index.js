@@ -130,6 +130,7 @@ class Compiler {
       msg += " " + loc.line + ":" + loc.column;
     }
     let str = `\x1b[31;1m${msg}\x1b[0m`;
+    console.log(this.content);
     throw new Error(str);
   }
 
