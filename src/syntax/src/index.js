@@ -3,6 +3,8 @@ import Tokenizer from "./Tokenizer";
 
 import "./build";
 
+import Node from "./nodes";
+
 import * as labels from "./labels";
 
 const parse = (tokens) => {
@@ -25,7 +27,8 @@ module.exports = {
   parse,
   parseFakeLiteral,
   tokenize,
-  labels
+  labels,
+  Node
 }
 
 if (typeof window !== "undefined") {

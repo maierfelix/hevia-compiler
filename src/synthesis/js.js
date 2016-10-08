@@ -212,7 +212,7 @@ export function emitExpression(node) {
       this.emitStatement(node.property);
     break;
     case Type.CallExpression:
-      if (node.isClassCreation) {
+      if (node.isInstantiatedClass) {
         this.write("new ");
       }
       this.emitStatement(node.callee);

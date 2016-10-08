@@ -1,4 +1,4 @@
-import { TT, Type, Token, Operator } from "../token";
+import { TT, Type, Token, Operator, Node } from "../token";
 
 /**
  * @param {Node} node
@@ -91,13 +91,21 @@ export function ReturnStatement(node) {
  */
 export function VariableDeclaration(node) {
   // is class property?
-  if (node.parent !== null) {
-    if (node.parent.kind === Type.ClassDeclaration) {
-      node.isClassProperty = true;
-    }
+  if (node.parent.kind === Type.ClassDeclaration) {
+    node.isClassProperty = true;
+  }
+  if (node.hasInferencedType) {
+    let type = new Node.TypeExpression();
+    type.type = node.init.resolvedType;
+    type.name = node.name;
+    type.init = node.init;
+    node.declaration = type;
   }
   // make sure the variable type is defined
   this.resolveIdentifier(node.declaration.type.value);
+  if (node.hasInferencedType) {
+    node.declaration.type = node.init.resolvedType;
+  }
 }
 
 /**
@@ -133,6 +141,7 @@ export function ClassDeclaration(node) {
   if (!node.ctor) {
     this.throw(`Missing constructor in class '${node.name}'`, node);
   }
+  node.resolvedType = this.createFakeLiteral(node.name);
   let type = node.ctor.type.value;
   if (type !== "Void" && !node.doesReturn) {
     this.throw(`Missing return '${type}' in class '${node.name}'`, node);

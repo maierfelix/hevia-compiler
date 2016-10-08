@@ -105,6 +105,8 @@ export function VariableDeclaration(node) {
   let decl = node.declaration;
   let name = this.isNodeKindOf(decl, Type.TypeExpression) ? decl.name.value : decl.value;
   decl.init = node.init;
+  node.hasInferencedType = decl.kind === Type.TypeExpression ? false : true;
+  node.name = !node.hasInferencedType ? decl.name : decl;
   // already declared?
   this.alreadyDeclared(node);
   this.scope.register(name, decl);

@@ -1,6 +1,6 @@
 import {
   parseFakeLiteral,
-  TT, Type, Token, Operator
+  TT, Type, Token, Operator, Node
 } from "../token";
 
 import {
@@ -75,9 +75,10 @@ export function resolveType(node) {
           );
         }
         else {
-          this.throw(`Unsupported call to '${this.getNodeKindAsString(resolve)}' node`, node);
+          this.throw(`Invalid call to '${this.getNodeKindAsString(resolve)}' node`, node);
         }
         this.resolveIdentifier(node.resolvedType.value);
+        node.isInstantiatedClass = true;
         node.resolvedType.isInstantiatedClass = true;
       } else if (node.callee.kind === Type.MemberExpression) {
         this.resolveType(node.callee);
@@ -114,7 +115,32 @@ export function resolveType(node) {
 
 /**
  * @param {Node} node
- * @return {String}
+ */
+export function inferenceNodeType(node) {
+  let resolve = this.scope.resolve(node.value);
+  if (resolve.kind === Type.ClassDeclaration) {
+    return (resolve.resolvedType);
+  }
+  if (resolve.kind === Type.EnumDeclaration) {
+    resolve.resolvedType = this.createFakeLiteral(resolve.name.value);
+    return (resolve.resolvedType);
+  }
+  if (resolve.kind === Type.Literal) {
+    if (resolve.init.kind === Type.CallExpression) {
+      resolve.resolvedType = resolve.init.resolvedType;
+      return (resolve.resolvedType);
+    }
+    if (resolve.init.parent.kind === Type.VariableDeclaration) {
+      return (resolve.init.resolvedType);
+    }
+    this.throw(`Cannot resolve '${this.getNodeKindAsString(node)}'`, node);
+  }
+  return (this.createFakeLiteral(resolve.init.resolvedType.value));
+}
+
+/**
+ * @param {Node} node
+ * @return {Node}
  */
 export function resolveLiteral(node) {
   let resolve = this.scope.resolve(node.value);
@@ -127,8 +153,9 @@ export function resolveLiteral(node) {
     if (resolve.kind === Type.TypeExpression) {
       return (resolve.type);
     }
+    // no type attached, so inference
     else {
-      return (this.createFakeLiteral(node.value));
+      return (this.inferenceNodeType(node));
     }
   } else {
     if (node.type === Token.NumericLiteral) {
@@ -274,7 +301,14 @@ export function resolveMemberExpression(node) {
     let name = isThis ? "this" : object.value;
     this.throw(`'${name}' does not have member '${property.value}'`, property);
   }
-  return (entry.type);
+
+  if (entry.kind === Type.TypeExpression) {
+    return (entry.type);
+  } else if (entry.kind === Type.Literal) {
+    return (entry.init.resolvedType);
+  } else {
+    this.throw(`Cannot resolve member of kind '${this.getNodeKindAsString(entry)}'`);
+  }
 
 }
 
@@ -288,6 +322,7 @@ export function resolveObjectMemberProperty(node, property) {
     case Type.ClassDeclaration:
       for (let sub of node.body.body) {
         if (!(sub.isClassProperty)) continue;
+        let name = null;
         let resolve = null;
         // allow functions and variables as members
         if (sub.kind === Type.VariableDeclaration) {
@@ -298,8 +333,14 @@ export function resolveObjectMemberProperty(node, property) {
         }
         resolve = node.context.resolve(name);
         if (resolve) {
-          if (resolve.name.value === property) return (resolve);
-          if (resolve.name === property) return (resolve);
+          if (resolve.kind === Type.Literal) {
+            if (resolve.value === property) {
+              return (resolve.init.parent.declaration);
+            }
+          } else {
+            if (resolve.name.value === property) return (resolve);
+            if (resolve.name === property) return (resolve);
+          }
         }
       };
     break;
@@ -384,7 +425,11 @@ export function resolveBinaryExpression(node) {
         if (resolve && resolve.kind === Type.ClassDeclaration) {
           this.throw(`'${resolve.name}' is immutable`, node.left);
         }
-        resolve = resolve.type;
+        if (resolve.kind === Type.TypeExpression) {
+          resolve = resolve.type;
+        } else {
+          resolve = resolve.init.resolvedType;
+        }
       }
       // assign expr type has to match identifier type
       if (resolve.value !== returnType.value) {
@@ -492,7 +537,11 @@ export function resolveReturnType(node, type) {
   if (!parent) return void 0;
   if (parent.kind === Type.VariableDeclaration) {
     let declaration = parent.declaration;
+    let inferencedType = declaration.init.resolvedType;
     let parentType = declaration.type.value;
+    if (parent.hasInferencedType) {
+      parentType = inferencedType.value;
+    }
     // assign to null is allowed
     if (type === "Null") return void 0;
     if (parentType !== type) {

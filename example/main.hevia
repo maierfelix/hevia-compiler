@@ -2,7 +2,7 @@
 import fibonacci
 
 let a:Int = nil
-let b:Int = 1338
+let b = 1338
 
 class Point {
   static let xx:Double = 1337.5;
@@ -19,8 +19,8 @@ class Point {
 Point.xx = 1337.25;
 
 class Vector {
-  let x:Int = 0;
-  let y:Int = 0;
+  let x = 0;
+  let y = 0;
   let z:Double = 255.7856;
   let parent:Vector = nil;
   constructor(x:Int, y:Int) {
@@ -37,12 +37,12 @@ class Vector {
   }
 }
 
-let vecTest:Vector = Vector(5, 10);
+let vecTest = Vector(5, 10);
 vecTest.parent = Vector(15, 20);
-let vecTest2:Vector = vecTest.parent;
-let vecTest3:Int = vecTest.parent.parent.x;
+let vecTest2 = vecTest.parent;
+let vecTest3 = vecTest.parent.parent.x;
 
-let vecTest4:Vector = Vector(5, 6);
+let vecTest4 = Vector(5, 6);
 
 vecTest4.parent = Vector(1, 2);
 
@@ -75,11 +75,11 @@ infix operator meow {
   }
 }
 
-let vecA:Vector = Vector(a, 2 * 745);
-let vecB:Vector = Vector(b, 5);
+let vecA = Vector(a, 2 * 745);
+let vecB = Vector(b, 5);
 b = (Vector(a, 2) equals vecB) meow false;
 
-let rofl:Int = 1337 $ (2 $ (vecA equals vecB)) meow false;
+let rofl = 1337 $ (2 $ (vecA equals vecB)) meow false;
 
 let result:Boolean = nil
 if (false == true) {
@@ -97,11 +97,11 @@ infix operator HAX {
   }
 }
 
-let ternary:Boolean = 1 != 2 ? true : Vector(1, 1) equals Vector(2, 2);
+let ternary = 1 != 2 ? true : Vector(1, 1) equals Vector(2, 2);
 
 a HAX a;
 
-let x1x:Int = ternary ? (((a + 44 * 2) == 1) meow ((a * 2 + 7) == 2)) : 12345;
+let x1x = ternary ? (((a + 44 * 2) == 1) meow ((a * 2 + 7) == 2)) : b;
 
 //let ternaryMismatch:Int = true ? false ? 1337.55 : 1338.55 : 0;
 
@@ -114,7 +114,7 @@ infix operator °°°° {
   }
 }
 
-const ccc:Int = 2 °°°° 2 + 5;
+const ccc = 2 °°°° 2 + 5;
 
 // detect if operator does some kind of assignment
 // to prevent constants from being changed
@@ -131,5 +131,13 @@ enum Direction {
   Right
 }
 
-let aEnum:Int = .Left;
-let bEnum:Int = Direction.Up;
+let aEnum = .Left;
+let bEnum = Direction.Up == 1;
+
+let ameno = x1x $ (((true) meow false) == 2);
+let mum = ameno;
+
+/*
+let str:String = "hi";
+let length:Number = str.length;
+*/
