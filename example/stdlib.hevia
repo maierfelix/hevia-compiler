@@ -1,0 +1,6 @@
+class String {
+  func charAt(index:Int)->String
+  func length()->Int {
+    return (vec);
+  }
+}

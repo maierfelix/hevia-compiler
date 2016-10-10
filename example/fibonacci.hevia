@@ -9,7 +9,7 @@ func fibonacci(n: inout Int)->Int {
 }
 
 func swap(c: inout Int, d: inout Int) {
-  let tmp:Int = c
+  let tmp = c
   c = d
   d = fibonacci(c)
 }

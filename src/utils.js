@@ -28,9 +28,12 @@ export function getUid() {
  * @return {String}
  */
 export function getType(value) {
+  if (!isNaN(value)) {
+    if (!(String(value).indexOf(".") === -1)) return ("Double");
+    let nn = Number(value);
+    if (nn % 1 === 0) return ("Int");
+  }
   if (typeof value === "string") return ("String");
-  if (Number(value) === value && value % 1 === 0) return ("Int");
-  if (Number(value) === value && value % 1 !== 0) return ("Double");
   return ("Void");
 }
 

@@ -102,7 +102,7 @@ export function emitStatement(node) {
     break;
     case Type.ConstructorDeclaration:
       // only emit if constructors contains sth
-      if (node.body.length) {
+      if (node.body.body.length) {
         this.write("(function() ");
         this.emitBlock(node.body);
         this.write(").call(this)");
@@ -113,29 +113,10 @@ export function emitStatement(node) {
       }
     break;
     case Type.VariableDeclaration:
-      if (this.insideClass && node.isStatic) {
-        return void 0;
-      }
-      if (node.isStatic && !this.insideClass) {
-        this.write("\n");
-        this.writeIndent();
-        this.write(node.parent.name);
-        this.write(".");
-      }
-      else if (this.insideClass) {
-        this.write("this.");
-      }
-      //else if (node.isConstant) this.write("const ");
-      else this.write("var ");
-      this.write(node.declaration.name.value);
-      this.write(" = ");
-      if (node.declaration.isPointer) {
-        this.write("{ $iov: ");
-        this.emitStatement(node.init);
-        this.write(" }");
-      } else {
-        this.emitStatement(node.init);
-      }
+      this.emitVariableDeclaration(node);
+    break;
+    case Type.PseudoProperty:
+      this.emitPseudoProperty(node);
     break;
     case Type.OperatorDeclaration:
       this.write("var ");
@@ -168,12 +149,98 @@ export function emitStatement(node) {
       this.emitStatement(node.argument);
       this.write(")");
     break;
-    case Type.ImportDeclaration: break;
     default:
       this.throw(`Invalid node kind '${this.getNodeKindAsString(node)}'`);
     break;
   };
   return void 0;
+}
+
+/**
+ * @param {Node} node
+ */
+export function emitVariableDeclaration(node) {
+  if (node.isPseudo) {
+    this.write("this._");
+    this.emitStatement(node.declaration.name);
+    this.write(" = ");
+    this.write("null;\n");
+    this.writeIndent();
+    this.write("Object.defineProperty(");
+    if (node.parent.kind === Type.ClassDeclaration) {
+      this.write(node.parent.name);
+      this.write(".prototype");
+    } else {
+      this.throw(`Unsupported pseudo parent ${this.getNodeKindAsString(node.parent)}`);
+    }
+    this.write(`, "`);
+    this.emitStatement(node.declaration.name);
+    this.write(`",`);
+    this.write(" {\n");
+    this.indent();
+    let ii = 0;
+    let body = node.init.body;
+    let length = body.length;
+    for (; ii < length; ++ii) {
+      let key = body[ii];
+      if (key.kind !== Type.PseudoProperty) {
+        this.throw(`Invalid ${this.getNodeKindAsString(key)} node`);
+      }
+      this.writeIndent();
+      this.emitStatement(key);
+      this.write(",\n");
+    };
+    this.writeIndent();
+    this.write("enumerable: true,\n");
+    this.writeIndent();
+    this.write("configurable: true\n");
+    this.outdent();
+    this.writeIndent();
+    this.write("})");
+    return void 0;
+  }
+  if (this.insideClass && node.isStatic) {
+    return void 0;
+  }
+  if (node.isStatic && !this.insideClass) {
+    this.write("\n");
+    this.writeIndent();
+    this.write(node.parent.name);
+    this.write(".");
+  }
+  else if (node.isClassProperty) {
+    this.write("this.");
+  }
+  //else if (node.isConstant) this.write("const ");
+  else this.write("var ");
+  this.write(node.declaration.name.value);
+  this.write(" = ");
+  if (node.declaration.isPointer) {
+    this.write("{ $iov: ");
+    this.emitStatement(node.init);
+    this.write(" }");
+  } else {
+    let init = node.init;
+    if (init && init.kind === Type.BlockStatement) {
+      this.emitBlock(init);
+    } else {
+      this.emitStatement(init);
+    }
+  }
+}
+
+/**
+ * @param {Node} node
+ */
+export function emitPseudoProperty(node) {
+  let name = node.name === TT.GET ? "get" : "set";
+  this.write(name);
+  this.write(": ");
+  this.write("function ");
+  this.emitArguments(node.arguments);
+  this.insidePseudo = true;
+  this.emitBlock(node.body);
+  this.insidePseudo = false;
 }
 
 /**
@@ -228,6 +295,8 @@ export function emitExpression(node) {
         node.type === Token.NullLiteral ? "null" :
         node.value
       );
+      let isPseudo = this.insidePseudo && node.isPseudoAccess;
+      if (isPseudo) value = "this._" + value;
       if (node.isReference && !node.isParameter) {
         this.write(`${value}.$iov`);
       } else {

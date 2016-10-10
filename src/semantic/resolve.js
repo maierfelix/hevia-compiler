@@ -73,13 +73,13 @@ export function resolveType(node) {
             resolve.ctor.arguments, node.arguments,
             Type.ClassDeclaration
           );
+          node.isInstantiatedClass = true;
+          node.resolvedType.isInstantiatedClass = true;
         }
         else {
           this.throw(`Invalid call to '${this.getNodeKindAsString(resolve)}' node`, node);
         }
         this.resolveIdentifier(node.resolvedType.value);
-        node.isInstantiatedClass = true;
-        node.resolvedType.isInstantiatedClass = true;
       } else if (node.callee.kind === Type.MemberExpression) {
         this.resolveType(node.callee);
         node.resolvedType = node.callee.resolvedType;
@@ -90,6 +90,10 @@ export function resolveType(node) {
     case Type.Literal:
       node.resolvedType = this.resolveLiteral(node);
       this.resolveIdentifier(node.resolvedType.value);
+      var resolve = this.scope.resolve(node.value);
+      if (resolve && resolve.init && resolve.init.parent.isPseudo) {
+        node.isPseudoAccess = true;
+      }
       if (!node.isParameter && !node.isOperatorParameter) {
         let resolve = this.scope.resolve(node.value);
         if (resolve && resolve.init && resolve.init.parent.kind === Type.VariableDeclaration) {
@@ -159,7 +163,7 @@ export function resolveLiteral(node) {
     }
   } else {
     if (node.type === Token.NumericLiteral) {
-      return (this.createFakeLiteral(getType(parseFloat(node.value))));
+      return (this.createFakeLiteral(getType(node.value)));
     }
     else if (node.type === Token.StringLiteral) {
       return (this.createFakeLiteral("String"));

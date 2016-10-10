@@ -132,6 +132,9 @@ export function getDeclarationName(node) {
         this.throw(`Unexpected declaration node '${this.getNodeKindAsString(parent)}'`, node);
       }
     break;
+    case Type.TypeExpression:
+      return (node.name.value);
+    break;
   };
 }
 

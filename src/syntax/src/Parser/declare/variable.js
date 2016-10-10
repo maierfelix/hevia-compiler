@@ -41,6 +41,10 @@ export function parseVariable(node) {
 
   if (this.eat(TT.ASSIGN)) {
     node.init = this.parseStatement();
+  } else if (this.eat(TT.LBRACE)) {
+    node.isPseudo = true;
+    node.init = this.parseBlock();
+    this.expect(TT.RBRACE);
   } else {
     node.init = this.parseFakeLiteral(TT.NULL);
   }

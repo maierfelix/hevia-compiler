@@ -373,7 +373,7 @@ class Compiler {
     this.emitProgram(ast);
     console.log("----------------");
     console.log(this.content);
-    //console.log("=>", vm.runInNewContext(this.content, {}));
+    console.log("=>", vm.runInNewContext(this.content, {}));
   }
 
   resetStates() {

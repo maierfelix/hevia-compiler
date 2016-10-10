@@ -276,7 +276,6 @@ export function EnumDeclaration(node) {
 export function ConstructorDeclaration(node) {
   this.expectNodeKind(node, Type.ConstructorDeclaration);
   this.pushScope(node);
-  let parent = node.parent;
   let tmpCtx = this.returnContext;
   this.returnContext = node;
   this.walkArguments(node);
@@ -327,6 +326,20 @@ export function TernaryExpression(node) {
   this.walkNode(node.test, node);
   this.walkNode(node.consequent, node);
   this.walkNode(node.alternate, node);
+}
+
+/**
+ * @param {Node} node
+ */
+export function PseudoProperty(node) {
+  this.expectNodeKind(node, Type.PseudoProperty);
+  this.pushScope(node);
+  let tmpCtx = this.returnContext;
+  this.returnContext = node.parent.declaration;
+  this.walkArguments(node);
+  this.walkNode(node.body, node);
+  this.returnContext = tmpCtx;
+  this.popScope();
 }
 
 /**

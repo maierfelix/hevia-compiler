@@ -1,0 +1,11 @@
+class Pseudo {
+	let type = 0.25;
+  constructor() {
+  	this.length = 2;
+  }
+  let length:Int {
+  	get { return length * 2 }
+    set(n:Int) { if (1 < 2) { length = n + 1 } }
+  }
+  //func charAt(index:Int)->String
+}

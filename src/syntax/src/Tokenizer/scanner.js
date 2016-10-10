@@ -799,7 +799,7 @@ function scanNumericLiteral() {
 
   return {
     type: Token.NumericLiteral,
-    value: parseFloat(number),
+    value: number,
     lineNumber: lineNumber,
     lineStart: lineStart,
     start: start,

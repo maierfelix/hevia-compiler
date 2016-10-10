@@ -94,6 +94,9 @@ export function VariableDeclaration(node) {
   if (node.parent.kind === Type.ClassDeclaration) {
     node.isClassProperty = true;
   }
+  if (node.isPseudo && node.parent.kind !== Type.ClassDeclaration) {
+    this.throw(`Invalid pseudo property context`, node);
+  }
   if (node.hasInferencedType) {
     let type = new Node.TypeExpression();
     type.type = node.init.resolvedType;

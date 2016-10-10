@@ -1,12 +1,13 @@
 // vim: syntax=swift
+//import stdlib
 import fibonacci
 
 let a:Int = nil
 let b = 1338
 
 class Point {
-  static let xx:Double = 1337.5;
-  let yy:Double = 1338.5;
+  static let xx = 1337.5;
+  let yy = 1338.5;
   constructor(aa:Double, bb:Double) {
     if (true) {
       this.yy = bb;
@@ -21,7 +22,7 @@ Point.xx = 1337.25;
 class Vector {
   let x = 0;
   let y = 0;
-  let z:Double = 255.7856;
+  let z = 0.0;
   let parent:Vector = nil;
   constructor(x:Int, y:Int) {
     this.x = x;
