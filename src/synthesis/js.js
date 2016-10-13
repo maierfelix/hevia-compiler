@@ -4,22 +4,27 @@ import { TT, Type, Token, Operator } from "../token";
  * @param {Node} node
  */
 export function emitProgram(node) {
+  let wrap = !true;
   this.expectNodeKind(node, Type.Program);
-  this.write("(function() ");
-  this.emitBlock(node.body);
-  this.write(")();");
+  if (wrap) this.write("(function() ");
+  this.emitBlock(node.body, wrap);
+  if (wrap) this.write(")();");
 }
 
 /**
  * @param {Node} node
+ * @param {Boolean} braced
  */
-export function emitBlock(node) {
+export function emitBlock(node, braced) {
   this.expectNodeKind(node, Type.BlockStatement);
   let ii = 0;
   let length = node.body.length;
   let statement = null;
-  this.write("{\n");
-  this.indent();
+  let isBraced = braced !== false;
+  if (isBraced) {
+    this.write("{\n");
+    this.indent();
+  }
   for (; ii < length; ++ii) {
     statement = node.body[ii];
     this.writeIndent();
@@ -27,10 +32,12 @@ export function emitBlock(node) {
     this.write(";");
     if (ii + 1 < length) this.write("\n");
   };
-  this.write("\n");
-  this.outdent();
-  this.writeIndent();
-  this.write("}");
+  if (isBraced) {
+    this.write("\n");
+    this.outdent();
+    this.writeIndent();
+    this.write("}");
+  }
 }
 
 /**
@@ -44,6 +51,7 @@ export function emitStatement(node) {
   }
   switch (node.kind) {
     case Type.FunctionDeclaration:
+      //console.log(node.isStatic);
       if (this.insideClass) {
         this.write(node.parent.name);
         this.write(".prototype.");
@@ -96,8 +104,8 @@ export function emitStatement(node) {
         this.write(`"${value}"`);
         this.write(";\n");
       };
-      this.writeIndent();
       this.outdent();
+      this.writeIndent();
       this.write(`})(${name} || (${name} = {}))`);
     break;
     case Type.ConstructorDeclaration:
@@ -142,6 +150,19 @@ export function emitStatement(node) {
       if (node.alternate !== null) {
         this.emitStatement(node.alternate);
       }
+    break;
+    case Type.WhileStatement:
+      this.write("while ");
+      this.write("(");
+      this.emitStatement(node.test);
+      this.write(") ");
+      this.emitBlock(node.body);
+    break;
+    case Type.BreakStatement:
+      this.write("break");
+    break;
+    case Type.ContinueStatement:
+      this.write("continue");
     break;
     case Type.ReturnStatement:
       this.write("return ");
@@ -249,7 +270,7 @@ export function emitPseudoProperty(node) {
 export function emitExpression(node) {
   switch (node.kind) {
     case Type.BinaryExpression:
-      let op = this.getOperatorAsString(node.operator);
+      var op = this.getOperatorAsString(node.operator);
       let isParenthised = node.isParenthised;
       if (isParenthised) this.write("(");
       if (this.isNativeOperator(node)) {
@@ -272,6 +293,13 @@ export function emitExpression(node) {
       this.emitStatement(node.consequent);
       this.write(" : ");
       this.emitStatement(node.alternate);
+    break;
+    case Type.UnaryExpression:
+      var op = this.getOperatorAsString(node.operator);
+      let isPrefix = node.isPrefix;
+      if (isPrefix) this.write(op);
+      this.emitStatement(node.argument);
+      if (!isPrefix) this.write(op);
     break;
     case Type.MemberExpression:
       this.emitStatement(node.object);
@@ -315,9 +343,10 @@ export function emitExpression(node) {
 export function isExpression(node) {
   let kind = node.kind;
   return (
-    kind === Type.BinaryExpression ||
     kind === Type.TernaryExpression ||
+    kind === Type.BinaryExpression ||
     kind === Type.MemberExpression ||
+    kind === Type.UnaryExpression ||
     kind === Type.CallExpression ||
     kind === Type.TypeExpression ||
     kind === Type.Literal

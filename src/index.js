@@ -4,7 +4,7 @@ import cmd from "./cli";
 import hevia from "./syntax";
 import Scope from "./semantic/scope";
 
-import { VERSION } from "./cfg";
+import { VERSION, PATH } from "./cfg";
 import { greet, inherit } from "./utils";
 import { TT, Type, Token, Operator } from "./token";
 
@@ -29,12 +29,12 @@ class Compiler {
 
     this.padding = 0;
 
+    this.input = "";
     this.content = "";
 
     this.scope = null;
+    this.global = new Scope({}, this.scope);
     this.returnContext = null;
-
-    this.ast = null;
 
     this.pathScope = null;
 
@@ -62,7 +62,11 @@ class Compiler {
    * @param {Node} node
    */
   pushScope(node) {
-    node.context = new Scope(node, this.scope);
+    let scope = new Scope(node, this.scope);
+    if (node.kind === Type.Program) {
+      scope = this.global;
+    }
+    node.context = scope;
     this.scope = node.context;
   }
 
@@ -262,7 +266,6 @@ class Compiler {
       case "Double":
       case "Float":
       case "Boolean":
-      case "String":
       case "Character":
         return (true);
       break;
@@ -351,29 +354,69 @@ class Compiler {
   }
 
   /**
-   * @param {String} msg
-   * @param {String} target
+   * @param {String} path
    */
-  compile(str, target) {
-    let index = cmd.path.lastIndexOf("/");
-    this.pathScope = cmd.path.substring(0, index + 1);
-    if (!target in _synthesis) {
-      this.throw(`Target '${target}' is unsupported`);
-    }
-    inherit(Compiler, _synthesis[target]);
-    let ast = this.parse(str);
-    this.ast = ast;
-    this.enterPhase(ast, "semantic");
-    this.compiled = true;
-    // a second time to trace pointers
-    this.enterPhase(ast, "semantic");
+  readFile(path) {
+    return (
+      fs.readFileSync(path, "utf8")
+    );
+  }
+
+  /**
+   * @param {String} path
+   */
+  init(path) {
+    this.compile(PATH.STDLIB, false);
+    this.compile(path, true);
+    console.log("----------------");
+    console.log(this.content);
+    console.log("----------------");
+    console.log("=>", vm.runInNewContext(this.content, {
+      console: console
+    }));
+  }
+
+  /**
+   * @param {String} path
+   * @return {Object}
+   */
+  compile(path) {
+    this.content = "";
+    let input = this.readFile(path);
+    let tmpPath = this.pathScope;
+    this.pathScope = this.extractPath(path);
+    let ast = this.parse(input);
+    this.analyzeSemantic(ast);
     this.enterPhase(ast, "optimization", false);
     this.enterPhase(ast, "synthesis", false);
     this.ozProgram(ast);
     this.emitProgram(ast);
-    console.log("----------------");
-    console.log(this.content);
-    console.log("=>", vm.runInNewContext(this.content, {}));
+    this.pathScope = tmpPath;
+    return ({
+      ast: ast,
+      ctx: ast.context,
+      output: this.content
+    });
+  }
+
+  /**
+   * @param {Node} ast
+   */
+  analyzeSemantic(ast) {
+    this.compiled = false;
+    this.enterPhase(ast, "semantic");
+    this.compiled = true;
+    // a second time to trace pointers
+    this.enterPhase(ast, "semantic");
+  }
+
+  /**
+   * @param {String} str
+   * @return {String}
+   */
+  extractPath(str) {
+    let index = str.lastIndexOf("/");
+    return (str.substring(0, index + 1));
   }
 
   resetStates() {
@@ -383,6 +426,11 @@ class Compiler {
     states.SYNTHESIS = false;
   }
 
+  /**
+   * @param {Node} ast
+   * @param {String} state
+   * @param {Boolean} walk
+   */
   enterPhase(ast, state, walk) {
     this.currentState = state.toLowerCase();
     this.resetStates();
@@ -431,12 +479,15 @@ inherit(Compiler, _semantic_resolve);
 inherit(Compiler, _optimization);
 inherit(Compiler, _optimization_rename);
 
+const target = "js";
 const compiler = new Compiler();
 
 compiler.registerVisitors(_semantic_visit, "semantic");
 
+inherit(Compiler, _synthesis[target]);
+
 try {
-  compiler.compile(cmd.input, "js");
+  compiler.init(cmd.path);
 } catch (e) {
   //console.log(e.message);
   console.log(e);

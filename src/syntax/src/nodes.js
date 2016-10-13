@@ -35,6 +35,26 @@ export default class Node {
     );
   }
 
+  static get BreakStatement() {
+    return (
+      class BreakStatement {
+        constructor() {
+          this.kind = Type.BreakStatement;
+        }
+      }
+    );
+  }
+
+  static get ContinueStatement() {
+    return (
+      class ContinueStatement {
+        constructor() {
+          this.kind = Type.ContinueStatement;
+        }
+      }
+    );
+  }
+
   static get TypeExpression() {
     return (
       class TypeExpression {

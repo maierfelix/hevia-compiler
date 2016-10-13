@@ -1,11 +1,31 @@
-class Pseudo {
-	let type = 0.25;
-  constructor() {
-  	this.length = 2;
+class Vector {
+  let x = 0;
+  let y = 0;
+  let z = 0.0;
+  let parent:Vector = nil;
+  static let lul = 1;
+  constructor(x:Int, y:Int) {
+    this.x = x;
+    this.y = y;
+    this.z = this.parent.parent.getVector().print();
+    // buggy
+    let sdgr = this.print(2);
+    this.x();
   }
-  let length:Int {
-  	get { return length * 2 }
-    set(n:Int) { if (1 < 2) { length = n + 1 } }
+  func print(a:Int)->Double {
+    return 255.555;
   }
-  //func charAt(index:Int)->String
+  func getVector() {
+    let vec:Vector = nil;
+    return (vec);
+  }
+  static func rofl()->Boolean {
+    return (true);
+  }
 }
+
+// buggy
+Vector.rofl();
+Vector.lul();
+Vector.parent.lul(5, 2);
+Vector.lul + 5;

@@ -1,0 +1,15 @@
+class String {
+  constructor() {}
+  static let length = 0;
+  static func charAt(idx:Int)->String {
+    return "";
+  }
+  static func charCodeAt(idx:Int)->Int {
+    return 0;
+  }
+}
+
+class console {
+  static func log(a:Int)->Void {}
+  constructor() {}
+}

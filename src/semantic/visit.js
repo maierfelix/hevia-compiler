@@ -1,3 +1,4 @@
+import { INFER_FUNC_TYPE } from "../cfg";
 import { TT, Type, Token, Operator, Node } from "../token";
 
 /**
@@ -75,15 +76,63 @@ export function ReturnStatement(node) {
   if (!this.returnContext) {
     this.throw(`Invalid return context`, node);
   }
-  let returnContext = this.returnContext.type.value;
+  let returnCtx = this.returnContext;
   let target = this.getDeclarationName(this.returnContext);
-  if (returnContext === "Void") {
+
+  // auto inference node return type
+  // if node doesnt return, but a return
+  // statement got found inside
+  if (returnCtx.type.value === "Void") {
+    if (INFER_FUNC_TYPE) {
+      returnCtx.isInferenced = true;
+      returnCtx.type = expr.resolvedType;
+    } else {
+      this.throw(`Inference function return types is disabled!`);
+    }
+  } else {
+    if (returnCtx.isInferenced && !this.compiled) {
+      this.throw(`Cannot inference '${target}' return type`);
+    }
+  }
+
+  let returnCtxType = returnCtx.type.value;
+  if (returnCtxType === "Void") {
     this.throw(`Invalid return statement in '${target}'`, node);
   }
-  if (returnContext !== returnType) {
-    this.throw(`'${target}' returns '${returnContext}' but got '${returnType}'`, node);
+  if (returnCtxType !== returnType) {
+    this.throw(`'${target}' returns '${returnCtxType}' but got '${returnType}'`, node);
   }
   this.resolveReturnStatement(node);
+}
+
+/**
+ * @param {Node} node
+ */
+export function WhileStatement(node) {
+  let type = node.test.resolvedType.value;
+  if (type !== "Boolean") {
+    this.throw(`WhileStatement test expected 'Boolean' but got '${type}'`, node);
+  }
+}
+
+/**
+ * @param {Node} node
+ */
+export function BreakStatement(node) {
+  let resolve = this.resolveUpUntil(node, Type.WhileStatement);
+  if (resolve === null) {
+    this.throw(`Illegal break statement context`, node);
+  }
+}
+
+/**
+ * @param {Node} node
+ */
+export function ContinueStatement(node) {
+  let resolve = this.resolveUpUntil(node, Type.WhileStatement);
+  if (resolve === null) {
+    this.throw(`Illegal continue statement context`, node);
+  }
 }
 
 /**

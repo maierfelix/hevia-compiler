@@ -26,6 +26,8 @@ export function parseStatement() {
     /** Loop statement */
     case TT.FOR:
     case TT.WHILE:
+    case TT.BREAK:
+    case TT.CONTINUE:
       node = this.parseLoopStatement();
     break;
     /** Branch statement */

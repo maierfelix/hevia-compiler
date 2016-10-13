@@ -22,6 +22,12 @@ export function parseLoopStatement() {
     case TT.WHILE:
       return this.parseWhile();
     break;
+    case TT.BREAK:
+      return this.parseBreak();
+    break;
+    case TT.CONTINUE:
+      return this.parseContinue();
+    break;
   };
 
   return (null);
@@ -72,6 +78,32 @@ export function parseWhile() {
   this.expect(TT.LBRACE);
   node.body = this.parseBlock();
   this.expect(TT.RBRACE);
+
+  return (node);
+
+}
+
+/**
+ * @return {Node}
+ */
+export function parseBreak() {
+
+  let node = this.createNode(Type.BreakStatement);
+
+  this.expect(TT.BREAK);
+
+  return (node);
+
+}
+
+/**
+ * @return {Node}
+ */
+export function parseContinue() {
+
+  let node = this.createNode(Type.BreakStatement);
+
+  this.expect(TT.CONTINUE);
 
   return (node);
 

@@ -1,0 +1,10 @@
+enum TokenKind {
+  LPAREN,
+  RPAREN,
+  LBRACK,
+  RBRACK,
+  LBRACE,
+  RBRACE,
+  Identifier,
+  NumberLiteral
+}

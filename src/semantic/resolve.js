@@ -38,9 +38,7 @@ export function resolveVariableDeclaration(name) {
   let resolve = this.resolveIdentifier(name);
   // argument passed as parameter
   if (resolve.isArgument) return (resolve);
-  return (
-    resolve.init.parent
-  );
+  return (resolve.init.parent);
 }
 
 /**
@@ -54,38 +52,7 @@ export function resolveType(node) {
       node.resolvedType = this.resolveExpression(node);
     break;
     case Type.CallExpression:
-      let resolve = null;
-      let callee = node.callee.value;
-      resolve = this.scope.resolve(callee);
-      if (node.callee.kind === Type.Literal) {
-        if (resolve.kind === Type.FunctionDeclaration) {
-          node.resolvedType = resolve.type;
-          this.validateArguments(
-            callee,
-            resolve.arguments, node.arguments,
-            Type.FunctionDeclaration
-          );
-        }
-        else if (resolve.kind === Type.ClassDeclaration) {
-          node.resolvedType = this.createFakeLiteral(callee);
-          this.validateArguments(
-            callee,
-            resolve.ctor.arguments, node.arguments,
-            Type.ClassDeclaration
-          );
-          node.isInstantiatedClass = true;
-          node.resolvedType.isInstantiatedClass = true;
-        }
-        else {
-          this.throw(`Invalid call to '${this.getNodeKindAsString(resolve)}' node`, node);
-        }
-        this.resolveIdentifier(node.resolvedType.value);
-      } else if (node.callee.kind === Type.MemberExpression) {
-        this.resolveType(node.callee);
-        node.resolvedType = node.callee.resolvedType;
-      } else {
-        this.throw(`Invalid callee node kind ${this.getNodeKindAsString(node.callee)}`);
-      }
+      this.resolveCallExpression(node);
     break;
     case Type.Literal:
       node.resolvedType = this.resolveLiteral(node);
@@ -111,10 +78,51 @@ export function resolveType(node) {
     case Type.TernaryExpression:
       node.resolvedType = this.resolveExpression(node);
     break;
+    case Type.UnaryExpression:
+      node.resolvedType = this.resolveExpression(node);
+    break;
     default:
       this.throw(`Unsupported '${this.getNodeKindAsString(node)}' node type`, node);
     break;
   };
+}
+
+/**
+ * @param {Node} node
+ */
+export function resolveCallExpression(node) {
+  let callee = node.callee.value;
+  let resolve = this.scope.resolve(callee);
+  if (node.callee.kind === Type.Literal) {
+    if (resolve.kind === Type.FunctionDeclaration) {
+      node.resolvedType = resolve.type;
+      this.validateArguments(
+        callee,
+        resolve.arguments, node.arguments,
+        Type.FunctionDeclaration
+      );
+    }
+    else if (resolve.kind === Type.ClassDeclaration) {
+      node.resolvedType = this.createFakeLiteral(callee);
+      this.validateArguments(
+        callee,
+        resolve.ctor.arguments, node.arguments,
+        Type.ClassDeclaration
+      );
+      node.isInstantiatedClass = true;
+      node.resolvedType.isInstantiatedClass = true;
+    }
+    else {
+      this.throw(`Invalid call to '${this.getNodeKindAsString(resolve)}' node`, node);
+    }
+    this.resolveIdentifier(node.resolvedType.value);
+  } else if (node.callee.kind === Type.MemberExpression) {
+    callee = node.callee.property.value;
+    this.resolveType(node.callee);
+    node.resolvedType = node.callee.resolvedType;
+  } else {
+    this.throw(`Invalid callee node kind ${this.getNodeKindAsString(node.callee)}`);
+  }
 }
 
 /**
@@ -211,6 +219,9 @@ export function resolveExpression(node) {
     case Type.TernaryExpression:
       return (this.resolveTernaryExpression(node));
     break;
+    case Type.UnaryExpression:
+      return (this.resolveUnaryExpression(node));
+    break;
     default:
       this.throw(`Unsupported expression: '${this.getNodeKindAsString(node)}'`, node);
     break;
@@ -233,6 +244,14 @@ export function resolveTernaryExpression(node) {
     this.throw(`'TernaryExpression' has mismatching types '${consequent}' and '${alternate}'`, node);
   }
   return (node.consequent.resolvedType);
+}
+
+/**
+ * @param {Node} node
+ * @return {Node}
+ */
+export function resolveUnaryExpression(node) {
+  return (node.argument.resolvedType);
 }
 
 /**
@@ -282,12 +301,13 @@ export function resolveMemberExpression(node) {
       return (returnType.resolvedType);
     }
     return (returnType.type);
-  // inner static local variable access
+  // inner local property access
   } else {
     let resolveAbsolute = this.scope.resolve(property.value);
     if (resolveAbsolute === null) {
       this.throw(`Cannot access uninitialized property '${property.value}'`, property);
     }
+    // validate static variable
     if (resolveAbsolute.init && resolveAbsolute.init.parent !== null) {
       if (resolveAbsolute.init.parent.isStatic) {
         if (resolveAbsolute.init.parent.isClassProperty) {
@@ -296,17 +316,28 @@ export function resolveMemberExpression(node) {
         }
       }
     }
+    // validate static function
+    else if (resolveAbsolute.kind === Type.FunctionDeclaration) {
+      if (resolveAbsolute.isStatic && resolveAbsolute.isClassProperty) {
+        let name = resolveAbsolute.parent.name;
+        this.throw(`Cannot access uninitialized static function '${resolveAbsolute.name}' in class '${name}'`, property);
+      }
+    }
   }
 
   // local member
   let context = this.getThisContext();
   let entry = context.table[property.value];
+
   if (!entry) {
     let name = isThis ? "this" : object.value;
     this.throw(`'${name}' does not have member '${property.value}'`, property);
   }
 
-  if (entry.kind === Type.TypeExpression) {
+  // return resolved node type
+  if (entry.kind === Type.FunctionDeclaration) {
+    return (entry.type);
+  } else if (entry.kind === Type.TypeExpression) {
     return (entry.type);
   } else if (entry.kind === Type.Literal) {
     return (entry.init.resolvedType);

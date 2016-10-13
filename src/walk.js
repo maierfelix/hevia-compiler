@@ -155,7 +155,7 @@ export function walkParameters(node) {
     let arg = args[ii];
     if (this.states.SEMANTIC) {
       arg.isParameter = true;
-      this.analyzeParameter(node, arg, ii);
+      //this.analyzeParameter(node, arg, ii);
     }
     this.walkNode(arg, node);
   };
@@ -294,10 +294,14 @@ export function IfStatement(node) {
     this.walkNode(node.test, node);
   }
   if (node.consequent !== null) {
+    this.pushScope(node);
     this.walkNode(node.consequent, node);
+    this.popScope();
   }
   if (node.alternate !== null) {
+    this.pushScope(node);
     this.walkNode(node.alternate, node);
+    this.popScope();
   }
   this.popScope();
 }
@@ -331,6 +335,14 @@ export function TernaryExpression(node) {
 /**
  * @param {Node} node
  */
+export function UnaryExpression(node) {
+  this.expectNodeKind(node, Type.UnaryExpression);
+  this.walkNode(node.argument, node);
+}
+
+/**
+ * @param {Node} node
+ */
 export function PseudoProperty(node) {
   this.expectNodeKind(node, Type.PseudoProperty);
   this.pushScope(node);
@@ -340,6 +352,31 @@ export function PseudoProperty(node) {
   this.walkNode(node.body, node);
   this.returnContext = tmpCtx;
   this.popScope();
+}
+
+/**
+ * @param {Node} node
+ */
+export function WhileStatement(node) {
+  this.expectNodeKind(node, Type.WhileStatement);
+  this.walkNode(node.test, node);
+  this.pushScope(node);
+  this.walkNode(node.body, node);
+  this.popScope();
+}
+
+/**
+ * @param {Node} node
+ */
+export function BreakStatement(node) {
+  this.expectNodeKind(node, Type.BreakStatement);
+}
+
+/**
+ * @param {Node} node
+ */
+export function ContinueStatement(node) {
+  this.expectNodeKind(node, Type.ContinueStatement);
 }
 
 /**

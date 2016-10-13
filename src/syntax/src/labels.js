@@ -31,6 +31,8 @@ let ii = 0;
   Label[Label["IfStatement"] = ++ii] = "IfStatement";
   Label[Label["ForStatement"] = ++ii] = "ForStatement";
   Label[Label["WhileStatement"] = ++ii] = "WhileStatement";
+  Label[Label["BreakStatement"] = ++ii] = "BreakStatement";
+  Label[Label["ContinueStatement"] = ++ii] = "ContinueStatement";
   Label[Label["ExpressionStatement"] = ++ii] = "ExpressionStatement";
   Label[Label["ArrayExpression"] = ++ii] = "ArrayExpression";
   Label[Label["TypeExpression"] = ++ii] = "TypeExpression";

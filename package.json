@@ -1,6 +1,6 @@
 {
   "name": "hevia-compiler",
-  "version": "0.1.4",
+  "version": "0.1.6",
   "description": ":Swift-like strongly typed language",
   "license": "MIT",
   "repository": {

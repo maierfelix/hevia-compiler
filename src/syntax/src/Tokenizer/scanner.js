@@ -991,13 +991,21 @@ function collectToken() {
 
   if (token.type !== Token.EOF) {
     value = source.slice(token.start, token.end);
-    if (TT[token.value] !== void 0 && Number.isInteger(TT[token.value])) {
+    let isReservedKeyword = token.value === TT[TT[value]];
+    if (
+      TT[token.value] !== void 0 &&
+      Number.isInteger(TT[token.value]) &&
+      !isReservedKeyword
+    ) {
       entry = {
         name: TT[token.value],
         range: [token.start, token.end],
         loc: loc
       };
     } else {
+      if (isReservedKeyword) {
+        token.type = Token.Identifier;
+      }
       entry = {
         name: token.type,
         value: value,
@@ -1089,7 +1097,7 @@ function tokenize(code, options, delegate) {
   extra.tokenize = true;
   extra.delegate = delegate;
 
-  options.comment = true;
+  options.comment = false;
 
   // The following two fields are necessary to compute the Regex tokens.
   extra.openParenToken = -1;
