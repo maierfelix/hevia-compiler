@@ -1,3 +1,4 @@
+// vim: syntax=swift
 /**
  * @param {Int} cc
  * @return {Boolean}
