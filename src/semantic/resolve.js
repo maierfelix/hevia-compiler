@@ -49,7 +49,11 @@ export function resolveType(node) {
     case Type.BinaryExpression:
       this.resolveType(node.left);
       this.resolveType(node.right);
-      node.resolvedType = this.resolveExpression(node);
+      if (node.parent && node.parent.kind === Type.EnumDeclaration) {
+        node.resolvedType = node.right.resolvedType;
+      } else {
+        node.resolvedType = this.resolveExpression(node);
+      }
     break;
     case Type.CallExpression:
       this.resolveCallExpression(node);
@@ -381,7 +385,8 @@ export function resolveObjectMemberProperty(node, property) {
     break;
     case Type.EnumDeclaration:
       for (let key of node.keys) {
-        if (key.value === property) {
+        let value = key.kind === Type.BinaryExpression ? key.left : key;
+        if (value.value === property) {
           let resolve = this.scope.resolve(property);
           return (resolve);
         }
@@ -462,6 +467,8 @@ export function resolveBinaryExpression(node) {
         }
         if (resolve.kind === Type.TypeExpression) {
           resolve = resolve.type;
+        } else if (resolve.kind === Type.Literal && resolve.isEnumValue) {
+          resolve = resolve.resolvedType;
         } else {
           resolve = resolve.init.resolvedType;
         }

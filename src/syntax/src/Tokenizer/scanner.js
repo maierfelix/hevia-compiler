@@ -9,6 +9,10 @@ import {
   Operators as OP
 } from "../labels";
 
+import {
+  getLabelByNumber
+} from "../utils";
+
 var PlaceHolders,
   Messages,
   Regex,
@@ -125,6 +129,13 @@ function isIdentifierPart(ch) {
 
 function isKeyword(id) {
   return (TT[id] !== void 0);
+}
+
+function isReservedKeyword(id) {
+  if (isKeyword(id)) {
+    return (id === getLabelByNumber(TT[id]));
+  }
+  return (false);
 }
 
 // ECMA-262 11.4 Comments
@@ -992,7 +1003,15 @@ function collectToken() {
   if (token.type !== Token.EOF) {
     value = source.slice(token.start, token.end);
     let isReservedKeyword = token.value === TT[TT[value]];
-    if (
+    if (token.type === Token.StringLiteral) {
+      entry = {
+        name: token.type,
+        value: value,
+        range: [token.start, token.end],
+        loc: loc
+      };
+    }
+    else if (
       TT[token.value] !== void 0 &&
       Number.isInteger(TT[token.value]) &&
       !isReservedKeyword

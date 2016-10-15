@@ -30,7 +30,7 @@ export function walkArray(array, parent) {
       // backwards, so no new inserted node by import
       // declaration got missing to get walked over
       if (node.kind === Type.ImportDeclaration) {
-        this.walkNode(array[ii], parent);
+        ii--;
       }
     };
 }
@@ -108,7 +108,7 @@ export function VariableDeclaration(node) {
   node.hasInferencedType = decl.kind === Type.TypeExpression ? false : true;
   node.name = !node.hasInferencedType ? decl.name : decl;
   // already declared?
-  this.alreadyDeclared(node);
+  if (!this.compiled) this.alreadyDeclared(node);
   this.scope.register(name, decl);
   this.walkNode(decl.init, node);
 }
@@ -258,13 +258,16 @@ export function EnumDeclaration(node) {
   this.expectNodeKind(node.name, Type.Literal);
   this.scope.register(node.name.value, node);
   for (let key of node.keys) {
-    //let register = key.kind === Type.BinaryExpression ? key.left : key;
-    let register = key;
+    let isPureKey = key.kind !== Type.BinaryExpression;
+    let register = !isPureKey ? key.left : key;
+    if (register.kind !== Type.Literal) {
+      this.throw(`Expected 'Literal' enum key but got '${this.getNodeKindAsString(register)}'`);
+    }
     register.isEnumValue = true;
     this.scope.register(register.value, {
       isEnum: true,
-      key: register
-      //expression: key
+      key: register,
+      expression: key
     });
     this.walkNode(key, node);
   };
@@ -300,6 +303,9 @@ export function IfStatement(node) {
   }
   if (node.alternate !== null) {
     this.pushScope(node);
+    if (node.alternate.kind === Type.IfStatement) {
+      node.alternate.isAlternateIf = true;
+    }
     this.walkNode(node.alternate, node);
     this.popScope();
   }
@@ -316,7 +322,10 @@ export function MemberExpression(node) {
     let property = node.property;
     let resolve = this.scope.resolve(property.value);
     if (resolve && resolve.isEnumValue) {
-      node.object = resolve.parent.name;
+      let isExpression = resolve.parent.kind === Type.BinaryExpression;
+      node.object = isExpression ? resolve.parent.parent.name : resolve.parent.name;
+    } else {
+      this.throw(`Cannot resolve enum '${property.value}' key`);
     }
   }
   this.walkNode(node.object, node);
@@ -390,15 +399,17 @@ export function ImportDeclaration(node) {
     if (item.kind !== Type.Literal) {
       this.throw(`Invalid import specifier of kind ${this.getNodeKindAsString(item)}`);
     }
-    let path = this.pathScope + item.value;
-    let src = null;
+    let value = item.value;
+    value = value.substring(1, value.length - 1);
+    let path = this.pathScope + value;
+    let isDir = false;
     try {
-      let fetch = fs.readFileSync(path + ".hv");
-      src = fetch;
-    } catch (e) {
-      let fetch = fs.readFileSync(path + ".hevia");
-      src = fetch;
-    }
+      isDir = fs.lstatSync(path).isDirectory();
+    } catch (e) { };
+    let ext = ".hevia";
+    let src = fs.readFileSync(path + (isDir ? "/index" + ext : ext));
+    // navigate into the directory
+    if (isDir) this.pathScope += value + "/";
     let ast = this.parse(src);
     for (let key of ast.body.body) {
       nodes.push(key);

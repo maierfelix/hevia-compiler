@@ -91,12 +91,22 @@ export function emitStatement(node) {
       let length = node.keys.length;
       this.indent();
       for (; ii < length; ++ii) {
-        let value = node.keys[ii].value;
+        let key = node.keys[ii];
+        let isExpression = key.kind === Type.BinaryExpression;
+        let value = isExpression ? key.left.value : key.value;
         this.writeIndent();
         this.write(name);
         this.write("[");
         this.write(name);
-        this.write(`["${value}"]`);
+        this.write("[");
+        if (isExpression) {
+          this.emitStatement(key.right);
+        } else {
+          this.write(`"`);
+          this.emitStatement(key);
+          this.write(`"`);
+        }
+        this.write("]");
         this.write(" = ");
         this.write(ii);
         this.write("]");
@@ -137,7 +147,7 @@ export function emitStatement(node) {
     case Type.IfStatement:
       let parent = node.parent;
       if (node.test !== null) {
-        if (parent && parent.kind === Type.IfStatement) {
+        if (node.isAlternateIf) {
           this.write(" else ");
         }
         this.write("if (");
@@ -271,6 +281,8 @@ export function emitExpression(node) {
   switch (node.kind) {
     case Type.BinaryExpression:
       var op = this.getOperatorAsString(node.operator);
+      if (op === "==") op = "===";
+      else if (op === "!=") op = "!==";
       let isParenthised = node.isParenthised;
       if (isParenthised) this.write("(");
       if (this.isNativeOperator(node)) {

@@ -1,0 +1,57 @@
+/**
+ * @param {Int} cc
+ * @return {Boolean}
+ */
+func isAlpha(cc:Int)->Boolean {
+  return (
+    cc >= 65 && cc <= 90 ||
+    cc >= 97 && cc <= 122 ||
+    cc == 95
+  )
+}
+
+/**
+ * @param {Int} cc
+ * @return {Boolean}
+ */
+func isNumber(cc:Int)->Boolean {
+  return (
+    cc >= 48 && cc <= 57
+  );
+}
+
+/**
+ * @param {Int} cc
+ * @return {Boolean}
+ */
+func isWhitespace(cc:Int)->Boolean {
+  return (
+    cc == 9 ||
+    cc == 11 ||
+    cc == 12 ||
+    cc == 32 ||
+    cc == 160 ||
+    cc == 5760 ||
+    cc == 6158 ||
+    cc == 5760 ||
+    (cc >= 8192 && cc <= 8201) ||
+    cc == 8202 ||
+    cc == 8239 ||
+    cc == 8287 ||
+    cc == 12288 ||
+    cc == 65279
+  )
+}
+
+/**
+ * @param {Int} cc
+ * @return {Boolean}
+ */
+func isLineTerminator(cc:Int)->Boolean {
+  return (
+    cc == 10 ||
+    cc == 13 ||
+    cc == 8232 ||
+    cc == 8233
+  )
+}

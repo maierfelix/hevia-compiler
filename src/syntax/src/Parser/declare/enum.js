@@ -29,17 +29,17 @@ export function parseEnum() {
   while (true) {
     key = this.parseExpressionStatement();
     if (key === null) break;
-    /*if (key.kind !== Type.Literal && key.kind !== Type.BinaryExpression) {
+    if (key.kind !== Type.Literal && key.kind !== Type.BinaryExpression) {
       throw new Error(`Expected 'Literal' or 'BinaryExpression' but got '${getNameByLabel(key.kind)}'`);
     }
     if (key.kind === Type.BinaryExpression) {
       if (key.operator !== TT.ASSIGN) {
         throw new Error(`Only '=' operator is allowed here but got '${OP[TT[key.operator]].op}'`);
       }
-    }*/
-    if (key.kind !== Type.Literal) {
-      throw new Error(`Expected 'Literal' but got '${getNameByLabel(key.kind)}'`);
     }
+    /*if (key.kind !== Type.Literal) {
+      throw new Error(`Expected 'Literal' but got '${getNameByLabel(key.kind)}'`);
+    }*/
     node.keys.push(key);
     if (!this.eat(TT.COMMA)) break;
   };

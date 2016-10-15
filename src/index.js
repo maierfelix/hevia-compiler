@@ -366,8 +366,8 @@ class Compiler {
    * @param {String} path
    */
   init(path) {
-    this.compile(PATH.STDLIB, false);
-    this.compile(path, true);
+    this.compile(PATH.STDLIB);
+    this.compile(path);
     console.log("----------------");
     console.log(this.content);
     console.log("----------------");

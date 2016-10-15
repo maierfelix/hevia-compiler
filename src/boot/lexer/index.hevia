@@ -1,0 +1,84 @@
+// vim: syntax=swift
+import "token", "functions"
+
+/**
+ * @param {String} str
+ * @return {Token}
+ */
+func lex(str:String)->Token {
+
+  let idx = 0
+  let length = str.length
+
+  let cc:Int = nil
+  let ch:String = nil
+  let last:Token = nil
+
+  while (idx < length) {
+    cc = str.charCodeAt(idx)
+
+    // extract identifier
+    if (isAlpha(cc)) {
+      let buffer = ""
+      while (true) {
+        ch = str.charAt(idx)
+        cc = str.charCodeAt(idx)
+        if (!isAlpha(cc)) {
+          break;
+        }
+        buffer += ch
+        idx++
+      }
+      let token = Token()
+      token.kind = .Identifier
+      token.value = buffer
+      let tmp = last
+      last = token
+      token.next = tmp
+      let kind = tokenToKeyword(token)
+      if (kind > -1) {
+        token.kind = kind;
+      }
+    }
+
+    // extract number
+    else if (isNumber(cc)) {
+      let buffer = ""
+      while (true) {
+        ch = str.charAt(idx)
+        cc = str.charCodeAt(idx)
+        if (!isNumber(cc)) {
+          break;
+        }
+        buffer += ch
+        idx++
+      }
+      let token = Token()
+      token.kind = .NumericLiteral
+      token.value = buffer
+      let tmp = last
+      last = token
+      token.next = tmp
+    }
+
+    else {
+      idx++
+    }
+  }
+
+  return (last)
+
+}
+
+/**
+ * @param {Token} token
+ */
+func walkTokens(token:Token) {
+  while (true) {
+    if (token == nil) { break }
+    console.log(token.value, token.kind)
+    token = token.next
+  }
+}
+
+walkTokens(lex("let a:Int = 10;"))

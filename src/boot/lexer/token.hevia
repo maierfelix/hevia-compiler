@@ -1,0 +1,180 @@
+// vim: syntax=swift
+class Token {
+  let kind:Int = 0
+  let next:Token = nil
+  let value:String = nil
+  constructor() {}
+}
+
+enum TokenKind {
+  FUNCTION = "func",
+  LET = "let",
+  CONST = "const",
+  CLASS = "class",
+  STATIC = "static",
+  LPAREN = "(",
+  RPAREN = ")",
+  LBRACK = "[",
+  RBRACK = "[",
+  LBRACE = "{",
+  RBRACE = "}",
+  CONSTRUCTOR = "constructor",
+  IF = "if",
+  ELSE = "else",
+  ELIF = "elif",
+  THIS = "this",
+  RETURN = "return",
+  DOT = ".",
+  COLON = ":",
+  ARROW = "->",
+  OPERATOR = "operator",
+  PREFIX = "prefix",
+  INFIX = "infix",
+  POSTFIX = "postfix",
+  ASSOCIATIVITY = "associativity",
+  PRECEDENCE = "precedence",
+  COMMA = ",",
+  CONDITIONAL = "?",
+  SEMICOLON = ";",
+  LEFT = "left",
+  RIGHT = "right",
+  ENUM = "enum",
+  IMPORT = "import",
+  INOUT = "inout"
+}
+
+enum TokenType {
+  Identifier,
+  NumericLiteral,
+  BooleanLiteral,
+  NullLiteral,
+  StringLiteral
+}
+
+/**
+ * @param {Token} token
+ * @return {Int}
+ */
+func tokenToKeyword(token:Token)->Int {
+  if token.value == "let" {
+    return (.LET)
+  }
+  else if token.value == "const" {
+    return (.CONST)
+  }
+  else if token.value == "class" {
+    return (.CLASS)
+  }
+  else if token.value == "static" {
+    return (.STATIC)
+  }
+  else if token.value == "func" {
+    return (.FUNCTION)
+  }
+  else if token.value == "return" {
+    return (.RETURN)
+  }
+  else if token.value == "{" {
+    return (.LBRACE)
+  }
+  else if token.value == "}" {
+    return (.RBRACE)
+  }
+  else if token.value == "(" {
+    return (.LPAREN)
+  }
+  else if token.value == ")" {
+    return (.RPAREN)
+  }
+  else if token.value == "[" {
+    return (.LBRACK)
+  }
+  else if token.value == "]" {
+    return (.RBRACK)
+  }
+  else if token.value == "constructor" {
+    return (.CONSTRUCTOR)
+  }
+  else if token.value == "if" {
+    return (.IF)
+  }
+  else if token.value == "else" {
+    return (.ELSE)
+  }
+  else if token.value == "this" {
+    return (.THIS)
+  }
+  else if token.value == "," {
+    return (.COMMA)
+  }
+  else if token.value == "." {
+    return (.DOT)
+  }
+  else if token.value == ":" {
+    return (.COLON)
+  }
+  else if token.value == "->" {
+    return (.ARROW)
+  }
+  else if token.value == "operator" {
+    return (.OPERATOR)
+  }
+  else if token.value == "prefix" {
+    return (.PREFIX)
+  }
+  else if token.value == "infix" {
+    return (.INFIX)
+  }
+  else if token.value == "postfix" {
+    return (.POSTFIX)
+  }
+  else if token.value == "associativity" {
+    return (.ASSOCIATIVITY)
+  }
+  else if token.value == "precedence" {
+    return (.PRECEDENCE)
+  }
+  else if token.value == "left" {
+    return (.LEFT)
+  }
+  else if token.value == "right" {
+    return (.RIGHT)
+  }
+  else if token.value == "?" {
+    return (.CONDITIONAL)
+  }
+  else if token.value == ";" {
+    return (.SEMICOLON)
+  }
+  else if token.value == "import" {
+    return (.IMPORT)
+  }
+  else if token.value == "enum" {
+    return (.ENUM)
+  }
+  else if token.value == "inout" {
+    return (.INOUT)
+  }
+  else if token.value == "true" {
+    return (.BooleanLiteral)
+  }
+  else if token.value == "false" {
+    return (.BooleanLiteral)
+  }
+  else if token.value == "nil" {
+    return (.NullLiteral)
+  }
+  else {
+    return (-1)
+  }
+}
+
+/**
+ * @param {Token} token
+ * @return {Boolean}
+ */
+func tokenIsKeyWord(token:Token)->Boolean {
+  return (
+    tokenToKeyword(token) != -1
+  )
+}
