@@ -315,8 +315,15 @@ export function emitExpression(node) {
     break;
     case Type.MemberExpression:
       this.emitStatement(node.object);
-      this.write(".");
+      if (node.isComputed) {
+        this.write("[");
+      } else {
+        this.write(".");
+      }
       this.emitStatement(node.property);
+      if (node.isComputed) {
+        this.write("]");
+      }
     break;
     case Type.CallExpression:
       if (node.isInstantiatedClass) {

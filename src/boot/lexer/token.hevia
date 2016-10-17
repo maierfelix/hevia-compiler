@@ -40,7 +40,8 @@ enum TokenKind {
   RIGHT = "right",
   ENUM = "enum",
   IMPORT = "import",
-  INOUT = "inout"
+  INOUT = "inout",
+  ASSIGN = "="
 }
 
 enum TokenType {
@@ -58,6 +59,9 @@ enum TokenType {
 func tokenToKeyword(token:Token)->Int {
   if token.value == "let" {
     return (.LET)
+  }
+  else if token.value == "=" {
+    return (.ASSIGN);
   }
   else if token.value == "const" {
     return (.CONST)

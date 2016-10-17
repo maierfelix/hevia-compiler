@@ -81,4 +81,6 @@ func walkTokens(token:Token) {
   }
 }
 
+//console.log(.LET, TokenKind.LET, TokenKind[TokenKind.LET])
+
 walkTokens(lex("let a:Int = 10;"))

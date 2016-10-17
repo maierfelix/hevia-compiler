@@ -15,7 +15,13 @@ export function parseImport() {
 
   this.expect(TT.IMPORT);
 
-  node.specifiers = this.parseCommaSeperatedValues();
+  let key = null;
+  while (true) {
+  	key = this.parseExpressionStatement();
+  	if (key.kind !== Type.Literal) break;
+  	node.specifiers.push(key);
+  	if (!this.eat(TT.COMMA)) break;
+  };
 
   return (node);
 

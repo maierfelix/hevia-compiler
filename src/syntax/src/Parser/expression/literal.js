@@ -20,9 +20,9 @@ export function parseLiteral() {
   let node = this.createNode(Type.Literal);
 
   // Enum access
-  if (this.eat(TT.PERIOD)) {
-    node = this.parseLiteral();
-    node.isEnumLink = true;
+  if (this.peek(TT.PERIOD)) {
+    node = this.parseAtom();
+    node.object = null;
     return (node);
   }
 
