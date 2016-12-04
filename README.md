@@ -1,7 +1,7 @@
 <h1 align="center">Hevia Compiler</h1>
 
 <div align="center">
-  <strong>Swift-like strongly typed language that compiles to C and JavaScript.</strong>
+  <strong>Swift-like strongly typed language that compiles to JavaScript.</strong>
 </div>
 
 <br/>
@@ -9,9 +9,6 @@
 <div align="center">
   <a href="#">
     <img src="https://img.shields.io/badge/Target-JS-f1e05a.svg?style=flat-square" alt="Target JS" />
-  </a>
-  <a href="#">
-    <img src="https://img.shields.io/badge/Target-C-353535.svg?style=flat-square" alt="Target C" />
   </a>
   <br/>
   <a href="https://travis-ci.org/maierfelix/hevia-compiler">
@@ -28,22 +25,32 @@
   </a>
 </div>
 
-# What is it?
-Hevia is a strongly typed programming language for building cross-platform software. It compiles to straightforward, optimized, readable JavaScript and C source code. Hevia offers features like defining custom operators, inout parameters, enums and a clean, semicolon-less syntax.
+# Features
+ - Custom operators
+ - Type inference
+ - Enums
+ - Inout (pass by reference)
+ - Classes
 
-Garbage collection is not implemented yet.
+# Todo:
+ - Arrays
+ - Structs
+ - Bootstrapping
+ - Operator overloading
+ - Optimizations (Tree shaking, variable folding..)
+ - Restrict inout possibilities *ewww*
 
 # Examples
 ## Swap two variables with a custom operator
 ````swift
-let a:Int = 7
-let b:Int = 42
+let a = 7
+let b = 42
 
 infix operator swap {
   associativity left
   precedence 120
   constructor(lhs: inout Int, rhs:Int) {
-    const tmp:Int = lhs
+    const tmp = lhs
     lhs = rhs
     rhs = tmp
   }
@@ -54,8 +61,8 @@ a swap b;
 ## Compare two vectors
 ````swift
 class Vector {
-  let x:Int = 0
-  let y:Int = 0
+  let x = 0
+  let y = 0
   constructor(x:Int, y:Int) {
     this.x = x
     this.y = y
@@ -73,14 +80,14 @@ infix operator equals {
   }
 }
 
-let vecA:Vector = Vector(2, 2)
-let vecB:Vector = Vector(4, 4)
+let vecA = Vector(2, 2)
+let vecB = Vector(4, 4)
 
 vecA equals vecB // false
 ````
 ## Fibonacci
 ````swift
-func fibonacci(n:Int)->Int {
+func fibonacci(n:Int) {
   if n == 0 || n == 1 {
     return n;
   }
