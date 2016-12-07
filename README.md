@@ -49,7 +49,7 @@ let b = 42
 infix operator swap {
   associativity left
   precedence 120
-  constructor(lhs: inout Int, rhs:Int) {
+  constructor(lhs: inout Int, rhs: inout Int) {
     const tmp = lhs
     lhs = rhs
     rhs = tmp
